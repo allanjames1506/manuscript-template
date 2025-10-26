@@ -7,7 +7,6 @@ author: Charlotte Wickham
 library(tidyverse)
 ```
 
-
 Read a clean version of data:
 
 ```{r}
@@ -28,4 +27,3 @@ la_palma |>
   scale_size(range = c(0.5, 2), guide = "none") +
   theme_bw()
 ```
-
