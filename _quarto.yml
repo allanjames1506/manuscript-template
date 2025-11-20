@@ -3,6 +3,10 @@ project:
 
 execute:
   freeze: auto
+  fig-width: 6
+  fig-asp: 0.618
+  message: false
+  warning: false
 
 format:
   html:
