@@ -14,5 +14,7 @@
 .Rdata
 .httr-oauth
 .DS_Store
+.bib
+.pptx
 
 **/*.quarto_ipynb
