@@ -3,6 +3,8 @@
 
 /.quarto/
 /_manuscript
+/00_raw_data
+/01_tidy_data
 
 /agujournal2019.cls
 /trackchanges.sty
@@ -11,3 +13,5 @@
 .Rdata
 .httr-oauth
 .DS_Store
+
+**/*.quarto_ipynb
