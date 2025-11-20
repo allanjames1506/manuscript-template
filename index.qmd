@@ -1,41 +1,47 @@
 ---
-title: La Palma Earthquakes
+title: A meta-analysis of datasets at the interface of the plant circadian clock and the responses to temperature
 author:
-  - name: Steve Purves
-    orcid: 0000-0002-0760-5497
+  - name: Allan James
+    orcid: 0000-0003-4472-7095
     corresponding: true
-    email: steve@curvenote.com
-    roles:
-      - Investigation
-      - Project administration
-      - Software
-      - Visualization
+    email: allanjames1506@gmail.com
+    roles: [conceptulization, writing-original draft, writing-review & editing]
     affiliations:
-      - Curvenote
-  - name: Rowan Cockett
-    orcid: 0000-0002-7859-8394
-    corresponding: false
-    roles: []
-    affiliations:
-      - Curvenote
+      - Independent researcher
 keywords:
-  - La Palma
-  - Earthquakes
+  - Arabidopsis
+  - circadian
+  - network
 abstract: |
-  In September 2021, a significant jump in seismic activity on the island of La Palma (Canary Islands, Spain) signaled the start of a volcanic crisis that still continues at the time of writing. Earthquake data is continually collected and published by the Instituto Geográphico Nacional (IGN). ...
+  Previously published Chromatin immunoprecipitation (ChIP) genome-wide binding targets for eight Arabidopsis circadian clock proteins were characterised here for their prevalence in clusters of co-expressed genes from the Calixto *et al.*[@RN429] temperature and time series dataset of 7,302 differentially expressed (DE) genes. Categorisation of the DE gene clusters for their rhythmicity signals, particularly for amplitude changes during cooling transition, and the establishment clock-target enrichment for the clusters revealed three modules: a morning modest gain of amplitude group, a mid-afternoon high gain of amplitude group, and a mid-afternoon/evening high loss of amplitude group. Network analyses illustrated the relationships between clock components and their DE gene targets and showed that BBX29 (mid-afternoon high gain of amplitude group) and PIF4 (mid-afternoon/evening high loss of amplitude group) were targets of all the eight clock components. Detection of densely connected vertices (‘community detection’) within the clock targeted cold network point to the mid-afternoon high gain of amplitude group as a particular nexus between the clock and plants immediate and rapid response to cooling. The meta-analysis approach used here showcases the utility of ‘dry lab’ approaches to developing testable hypotheses in plant biology research.
 plain-language-summary: |
   Earthquake data for the island of La Palma from the September 2021 eruption is found ...
 key-points:
   - A web scraping script was developed to pull data from the Instituto Geogràphico Nacional into a machine-readable form for analysis
   - Earthquake events on La Palma are consistent with the presence of both mantle and crustal reservoirs.
 date: last-modified
-bibliography: references.bib
+bibliography: references2.bib
+csl: nature.csl
 citation:
-  container-title: Earth and Space Science
+  container-title: Time-of-day of Vaccination
+funding: 
+  statement: "The author received no specific funding for this work."  
 number-sections: true
 ---
 
 ## Introduction
+
+How plants respond to temperature continues to be a challenging question in plant biology, not least because responses are thought to involve multiple signal pathways[@RN859; @RN861; @RN862; @RN215; @RN113; @RN700; @RN865], can be fast acting, with rapid metabolic and gene expression changes observable within 2-20 minutes[@RN858; @RN601; @RN860; @RN429], or they can be integrated over the longer-term (days or weeks), leading to developmental changes such as the promotion of flowering via vernalisation, or the breaking of bud dormancy[@RN701; @RN217; @RN576; @RN864].
+
+Time – and it’s measurement by the endogenous circadian clock – is therefore a crucial dimension to plants responses to temperature.  Mathematical modelling and experimental validation of vernalisation gene expression dynamics for plants grown under both controlled and natural field conditions have established that temperature sensing is likely distributed across thermo-responsive regulatory networks operating over at least three distinct timescales (hour, day and month), with the day component particularly sensitivity to night-time temperature during the daily 24-hr diurnal cycle[@RN448; @RN447].
+
+At least one of the ways in which the clock is thought to influence plants physiological responses to low temperature is through time-of-day gating of downstream gene expression cascades. Within minutes of exposing plants to low temperature, induction of the *C-repeat-binding factor (CBF)1,-2* and *-3* transcriptional activator genes (also known as *dehydration-responsive element-binding factor (DREB)1b, -1c* and *-1a*, respectively) are evident leading to waves of changes in transcriptome composition[@RN249; @RN698; @RN699].  However, the rapid induction of the CBFs is dependent on the time-of-day that the plants are exposed to low temperature with expression more pronounced around subjective dawn compared to subjective dusk under constant light conditions[@RN250].  Expression of the circadian clock network, at least at the post-transcriptional level, is not immutable with temperature-associated alternative splicing (AS), including the rapid and sensitive switching between functional and non-functional transcript isoforms[@RN860; @RN427], thought to be a mechanism involved in the operation and regulation of the clock[@RN16; @RN15].
+
+The core circadian oscillator in Arabidopsis is made up of around twenty or so components and features multiple interlocking feedback loops of gene expression, modulated by post-translational control at several levels[@RN91; @RN866; @RN867; @RN868; @RN869], with additional inputs from factors, such as light and metabolism[@RN868; @RN461; @RN871]. The first loop to be discovered comprises the morning-expressed MYB transcription factors CIRCADIAN CLOCK ASSOCIATED 1 (CCA1) and LATE ELONGATED HYPOCOTYL (LHY) and the evening-phased transcriptional repressor PSEUDO-RESPONSE REGULATOR 1 (PRR1, also known as TIMING OF CAB EXPRESSION 1, TOC1). LHY and CCA1 belong to the REVEILLE (RVE) family of proteins, all of which contain a single DNA-binding Myb-like domain.  Other Myb-like family members are the RVEs 1 to 8. The core oscillator also features the day-phased transcriptional repressors PRR9, PRR7 and PRR5, the evening-phased components EARLY FLOWERING 3 (ELF3), ELF4 and LUX ARRHYTHMO (LUX) which interact to form a transcriptional repressor named the evening complex (EC)[@RN870].
+
+Here, I took a data-led approach to characterise the interface between timing and plants endogenous responses to temperature.  Our starting points were datasets from 1) genome wide ChIP-seq studies establishing circadian clock binding sites and 2) an RNA-seq study identifying patterns of differential expression in plants responding to cooling. The former datasets contained circadian clock gene targets for CCA1[@RN445; @RN486], LHY[@RN487], TOC1[@RN679], PRR5[@RN681], PRR7[@RN680] and the EC components, ELF3, ELF4 and LUX[@RN371], while the latter comprised 7.3k differentially expressed (DE) genes from a diurnal RNA-seq time-course experiment for plants grown at 20°C and then subjected to cooling to 4°C[@RN429].
+
+I established clusters of DE genes that were particularly enriched for clock targets and by characterising the rhythmic properties of the averaged diurnal expression profiles across time and temperature as well as the extent to which DE genes were targets of multiple clock components, I constructed weighted bipartite networks that illustrated the relationships between clock components and their DE gene targets. Of note were DE genes that were targets of multiple clock components, including B-box containing protein29 (BBX29; AT5G54470) and PHYTOCHROME-INTERACTING FACTOR 4 (PIF4; AT2G43010), both of which were found in each of the 8 clock component ChIP datasets examined. Using the meta-analysis approach, I defined groups of clusters that DE genes belonged to according to their clock enrichment and the change in amplitude during the first day of cooling and I found that, for example, BBX29 belonged to a ‘mid-afternoon high gain of amplitude module’ and PIF4 to a ‘mid-afternoon/evening high loss of amplitude module’.  The community structure of the networks pointed to the high connectivity of the ‘mid-afternoon high gain of amplitude module’ suggesting that this clock-DE gene sub-network represented an important nexus in the interface of the circadian clock and the response of plants to temperature.
 
 ```{r}
 eruptions <- c(1492, 1585, 1646, 1677, 1712, 1949, 1971, 2021)
@@ -63,7 +69,7 @@ avg_years_between_eruptions
 
 Based on data up to and including 1971, eruptions on La Palma happen every `{r} round(avg_years_between_eruptions, 1)` years on average.
 
-Studies of the magma systems feeding the volcano, such as @marrero2019, have proposed that there are two main magma reservoirs feeding the Cumbre Vieja volcano; one in the mantle (30-40km depth) which charges and in turn feeds a shallower crustal reservoir (10-20km depth).
+Studies of the magma systems feeding the volcano, such as, have proposed that there are two main magma reservoirs feeding the Cumbre Vieja volcano; one in the mantle (30-40km depth) which charges and in turn feeds a shallower crustal reservoir (10-20km depth).
 
 Eight eruptions have been recorded since the late 1400s (@fig-timeline).
 
@@ -100,11 +106,696 @@ La Palma is one of the west most islands in the Volcanic Archipelago of the Cana
 
 @fig-spatial-plot shows the location of recent Earthquakes on La Palma.
 
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+library(janitor)
+library(purrr)
+library(readr)
+library(ggbreak)
+library(patchwork)
+```
+
+```{r z_score_data}
+#| message: false
+#| warning: false
+#| 
+# CLUSTER GROUP PROFILES - WebPlotDigitizer----
+# DE profiles----
+# gather and join together all the WebPlotDigitizer files for each cluster group
+# WebPlotDigitizer https://apps.automeris.io/wpd/
+clusters_aggregated_DE <- list.files(path = './01_tidy_data/cluster_image_analysis_aggregate_DE', 
+                                  pattern = '*.csv', full.names = TRUE) %>% 
+  lapply(read_csv, show_col_types = FALSE) %>% 
+  purrr::reduce(full_join, by = 'id') %>% 
+  janitor::remove_empty(which = 'cols') %>% 
+  relocate(c(cluster_1, cluster_2, cluster_3, cluster_4, cluster_5, cluster_6, cluster_7, 
+             cluster_8, cluster_9), .before = cluster_10) 
+
+# split by individual days
+clusters_aggregated_DE_day1 <- clusters_aggregated_DE[row.names(clusters_aggregated_DE) %in% 1:17, ]
+clusters_aggregated_DE_day2 <- clusters_aggregated_DE[row.names(clusters_aggregated_DE) %in% 17:33, ]
+clusters_aggregated_DE_day5 <- clusters_aggregated_DE[row.names(clusters_aggregated_DE) %in% 34:50, ]
+
+# transpose so that columns are sample numbers (s1 to s9 in half steps) and rows are cluster groups, and rename columns
+clusters_aggregated_DE_day1_df <- data.frame(t(clusters_aggregated_DE_day1[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 1, to = 9, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:12)) %>% 
+  relocate(clusters) 
+
+clusters_aggregated_DE_day2_df <- data.frame(t(clusters_aggregated_DE_day2[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 9, to = 17, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:12)) %>% 
+  relocate(clusters) 
+
+clusters_aggregated_DE_day5_df <- data.frame(t(clusters_aggregated_DE_day5[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 18, to = 26, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:12)) %>% 
+  relocate(clusters) 
+
+#Selected clusters plotted ----
+
+clusters_aggregated_DE_pivot_longer <- clusters_aggregated_DE %>% 
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster", 
+               values_to = "z_score") %>%
+  mutate(id = case_when(id == 1 ~ 0,
+                        id == 1.5 ~ 1.5,
+                        id == 2 ~ 3,
+                        id == 2.5 ~ 4.5,
+                        id == 3 ~ 6,
+                        id == 3.5 ~ 7.5,
+                        id == 4 ~ 9,
+                        id == 4.5 ~ 10.5,
+                        id == 5 ~ 12,
+                        id == 5.5 ~ 13.5,
+                        id == 6 ~ 15,
+                        id == 6.5 ~ 16.5,
+                        id == 7 ~ 18,
+                        id == 7.5 ~ 19.5,
+                        id == 8 ~ 21,
+                        id == 8.5 ~ 22.5,
+                        id == 9 ~ 24,
+                        id == 9.5 ~ 25.5,
+                        id == 10 ~ 27,
+                        id == 10.5 ~ 28.5,
+                        id == 11 ~ 30,
+                        id == 11.5 ~ 31.5,
+                        id == 12 ~ 33,
+                        id == 12.5 ~ 34.5,
+                        id == 13 ~ 36,
+                        id == 13.5 ~ 37.5,
+                        id == 14 ~ 39,
+                        id == 14.5 ~ 40.5,
+                        id == 15 ~ 42,
+                        id == 15.5 ~ 43.5,
+                        id == 16 ~ 45,
+                        id == 16.5 ~ 46.5,
+                        id == 17 ~ 48,
+                        id == 18 ~ 96,
+                        id == 18.5 ~ 97.5,
+                        id == 19 ~ 99,
+                        id == 19.5 ~ 100.5,
+                        id == 20 ~ 102,
+                        id == 20.5 ~ 103.5,
+                        id == 21 ~ 105,
+                        id == 21.5 ~ 106.5,
+                        id == 22 ~ 108,
+                        id == 22.5 ~ 109.5,
+                        id == 23 ~ 111,
+                        id == 23.5 ~ 112.5,
+                        id == 24 ~ 114,
+                        id == 24.5 ~ 115.5,
+                        id == 25 ~ 117,
+                        id == 25.5 ~ 118.5,
+                        id == 26 ~ 120),
+         days = case_when(id <= 48 ~ 'Day 1 - Day 2',
+                          TRUE ~ 'Day 5'),
+         cluster = case_when(cluster == 'cluster_1' ~ 'cluster 1',
+                             cluster == 'cluster_2' ~ 'cluster 2',
+                             cluster == 'cluster_3' ~ 'cluster 3',
+                             cluster == 'cluster_4' ~ 'cluster 4',
+                             cluster == 'cluster_5' ~ 'cluster 5',
+                             cluster == 'cluster_6' ~ 'cluster 6',
+                             cluster == 'cluster_7' ~ 'cluster 7',
+                             cluster == 'cluster_8' ~ 'cluster 8',
+                             cluster == 'cluster_9' ~ 'cluster 9',
+                             cluster == 'cluster_10' ~ 'cluster 10',
+                             cluster == 'cluster_11' ~ 'cluster 11',
+                             cluster == 'cluster_12' ~ 'cluster 12',
+                             TRUE ~ NA))
+
+clusters_aggregated_DE_pivot_longer <- clusters_aggregated_DE_pivot_longer %>% 
+  mutate(days = factor(days, levels = c('Day 1 - Day 2', 'Day 5')))
+
+# DTU profiles----
+# gather and join together all the WebPlotDigitizer files for each cluster group
+# WebPlotDigitizer https://apps.automeris.io/wpd/
+clusters_aggregated_DTU <- list.files(path = './01_tidy_data/cluster_image_analysis_aggregate_DTU', 
+                                  pattern = '*.csv', full.names = TRUE) %>% 
+  lapply(read_csv, show_col_types = FALSE) %>% 
+  purrr::reduce(full_join, by = 'id') %>% 
+  janitor::remove_empty(which = 'cols') %>% 
+  relocate(c(cluster_1, cluster_2, cluster_3, cluster_4, cluster_5, cluster_6, cluster_7, 
+             cluster_8, cluster_9), .before = cluster_10) 
+
+# split by individual days
+clusters_aggregated_DTU_day1 <- clusters_aggregated_DTU[row.names(clusters_aggregated_DTU) %in% 1:17, ]
+clusters_aggregated_DTU_day2 <- clusters_aggregated_DTU[row.names(clusters_aggregated_DTU) %in% 17:33, ]
+clusters_aggregated_DTU_day5 <- clusters_aggregated_DTU[row.names(clusters_aggregated_DTU) %in% 34:50, ]
+
+# transpose so that columns are sample numbers (s1 to s9 in half steps) and rows are cluster groups, and rename columns
+clusters_aggregated_DTU_day1_df <- data.frame(t(clusters_aggregated_DTU_day1[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 1, to = 9, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:10)) %>% 
+  relocate(clusters) 
+
+clusters_aggregated_DTU_day2_df <- data.frame(t(clusters_aggregated_DTU_day2[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 9, to = 17, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:10)) %>% 
+  relocate(clusters) 
+
+clusters_aggregated_DTU_day5_df <- data.frame(t(clusters_aggregated_DTU_day5[, -1])) %>% 
+  rename_with(~ paste0("s", seq(from = 18, to = 26, by = 0.5))) %>% 
+  mutate(clusters = paste0("cluster_", 1:10)) %>% 
+  relocate(clusters) 
+
+# Selected clusters plotted ----
+
+clusters_aggregated_DTU_pivot_longer <- clusters_aggregated_DTU %>% 
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster", 
+               values_to = "z_score") %>%
+  mutate(id = case_when(id == 1 ~ 0,
+                        id == 1.5 ~ 1.5,
+                        id == 2 ~ 3,
+                        id == 2.5 ~ 4.5,
+                        id == 3 ~ 6,
+                        id == 3.5 ~ 7.5,
+                        id == 4 ~ 9,
+                        id == 4.5 ~ 10.5,
+                        id == 5 ~ 12,
+                        id == 5.5 ~ 13.5,
+                        id == 6 ~ 15,
+                        id == 6.5 ~ 16.5,
+                        id == 7 ~ 18,
+                        id == 7.5 ~ 19.5,
+                        id == 8 ~ 21,
+                        id == 8.5 ~ 22.5,
+                        id == 9 ~ 24,
+                        id == 9.5 ~ 25.5,
+                        id == 10 ~ 27,
+                        id == 10.5 ~ 28.5,
+                        id == 11 ~ 30,
+                        id == 11.5 ~ 31.5,
+                        id == 12 ~ 33,
+                        id == 12.5 ~ 34.5,
+                        id == 13 ~ 36,
+                        id == 13.5 ~ 37.5,
+                        id == 14 ~ 39,
+                        id == 14.5 ~ 40.5,
+                        id == 15 ~ 42,
+                        id == 15.5 ~ 43.5,
+                        id == 16 ~ 45,
+                        id == 16.5 ~ 46.5,
+                        id == 17 ~ 48,
+                        id == 18 ~ 96,
+                        id == 18.5 ~ 97.5,
+                        id == 19 ~ 99,
+                        id == 19.5 ~ 100.5,
+                        id == 20 ~ 102,
+                        id == 20.5 ~ 103.5,
+                        id == 21 ~ 105,
+                        id == 21.5 ~ 106.5,
+                        id == 22 ~ 108,
+                        id == 22.5 ~ 109.5,
+                        id == 23 ~ 111,
+                        id == 23.5 ~ 112.5,
+                        id == 24 ~ 114,
+                        id == 24.5 ~ 115.5,
+                        id == 25 ~ 117,
+                        id == 25.5 ~ 118.5,
+                        id == 26 ~ 120),
+         days = case_when(id <= 48 ~ 'Day 1 - Day 2',
+                          TRUE ~ 'Day 5'),
+         cluster = case_when(cluster == 'cluster_1' ~ 'cluster 1',
+                             cluster == 'cluster_2' ~ 'cluster 2',
+                             cluster == 'cluster_3' ~ 'cluster 3',
+                             cluster == 'cluster_4' ~ 'cluster 4',
+                             cluster == 'cluster_5' ~ 'cluster 5',
+                             cluster == 'cluster_6' ~ 'cluster 6',
+                             cluster == 'cluster_7' ~ 'cluster 7',
+                             cluster == 'cluster_8' ~ 'cluster 8',
+                             cluster == 'cluster_9' ~ 'cluster 9',
+                             cluster == 'cluster_10' ~ 'cluster 10',
+                             TRUE ~ NA))
+
+clusters_aggregated_DTU_pivot_longer <- clusters_aggregated_DTU_pivot_longer %>% 
+  mutate(days = factor(days, levels = c('Day 1 - Day 2', 'Day 5')))
+```
+
+```{r plot_z_scores }
+#| label: fig-z-score-clusters
+#| fig-cap: DE gene- and DTU transcript-clusters
+#| fig-alt: An event plot of the years of the last 8 eruptions on La Palma.
+
+annotations_DE <- data.frame(
+  label = c('Day 1', 'Day 2', 'Day 5'),
+  cluster = c('cluster 1', 'cluster 1', 'cluster 1'),
+  x     = c(12, 44, 108),
+  y     = c(2, 2, 2)
+)
+
+clusters_plot_DE <- clusters_aggregated_DE_pivot_longer %>%
+  ggplot(aes(x=id, y=z_score)) +
+  geom_vline(xintercept = 24, col = "lightblue", size = 2) +
+  geom_line() +
+  geom_point() +
+  theme_linedraw() +
+  xlim(-1, 122) +
+  scale_x_break(c(48, 96)) +
+  scale_x_continuous(breaks = seq(0, 120, 6)) +
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme(axis.text.x.top = element_blank(),
+        axis.ticks.x.top = element_blank(),
+        axis.line.x.top = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        plot.title = element_text(hjust=0.5, size = 16, face = "bold"),
+        axis.text = element_text(size=12),
+        axis.title=element_text(size=16,face="bold")) +
+  annotate("rect", xmin = c(0, 24, 96), xmax = c(12, 36, 108), ymin = -Inf, ymax = Inf,
+           alpha = 0.2, fill = "grey50") +
+  labs(y = "z-score", x = "hours") +
+  facet_grid(factor(cluster, levels = c('cluster 1',
+                                        'cluster 2',
+                                        'cluster 3',
+                                        'cluster 4',
+                                        'cluster 5',
+                                        'cluster 6',
+                                        'cluster 7',
+                                        'cluster 8',
+                                        'cluster 9',
+                                        'cluster 10',
+                                        'cluster 11',
+                                        'cluster 12')) ~ ., scales = "free_y") + 
+  theme(strip.text = element_text(face = "bold", color = "grey20", hjust = 0.5, size = 14),
+                                                     strip.background = element_rect(fill = "lightblue", linetype = "solid",
+                                                                                     color = "black", linewidth = 1)) +
+  geom_text(data = annotations_DE,
+    mapping = aes(x = x, y = y, label = label),
+    size = 6,
+    fontface = 'bold'
+  )
+
+clusters_plot_DE <- clusters_plot_DE + 
+  labs(title = 'DE gene clusters') +
+  theme(plot.title = element_text(size=16, color='black', face='bold', hjust =0))
+
+annotations_DTU <- data.frame(
+  label = c('Day 1', 'Day 2', 'Day 5'),
+  cluster = c('cluster 1', 'cluster 1', 'cluster 1'),
+  x     = c(10, 36, 108),
+  y     = c(1.2, 1.2, 1.2)
+)
+
+clusters_plot_DTU <- clusters_aggregated_DTU_pivot_longer %>%
+  ggplot(aes(x=id, y=z_score)) +
+  geom_vline(xintercept = 24, col = "lightblue", size = 2) +
+  geom_line() +
+  geom_point() +
+  theme_linedraw() +
+  xlim(-1, 122) +
+  scale_x_break(c(48, 96)) +
+  scale_x_continuous(breaks = seq(0, 120, 6)) +
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme(axis.text.x.top = element_blank(),
+        axis.ticks.x.top = element_blank(),
+        axis.line.x.top = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        plot.title = element_text(hjust=0.5, size = 16, face = "bold"),
+        axis.text = element_text(size=12),
+        axis.title=element_text(size=16,face="bold")) +
+  annotate("rect", xmin = c(0, 24, 96), xmax = c(12, 36, 108), ymin = -Inf, ymax = Inf,
+           alpha = 0.2, fill = "grey50") +
+  labs(y = "", x = "hours") +
+  facet_grid(factor(cluster, levels = c('cluster 1',
+                                        'cluster 2',
+                                        'cluster 3',
+                                        'cluster 4',
+                                        'cluster 5',
+                                        'cluster 6',
+                                        'cluster 7',
+                                        'cluster 8',
+                                        'cluster 9',
+                                        'cluster 10')) ~ ., scales = "free_y") + 
+  theme(strip.text = element_text(face = "bold", color = "grey20", hjust = 0.5, size = 14),
+        strip.background = element_rect(fill = "lightblue", linetype = "solid",
+                                        color = "black", linewidth = 1)) +
+  geom_text(data = annotations_DTU,
+            mapping = aes(x = x, y = y, label = label),
+            size = 6,
+            fontface = 'bold'
+  )
+
+clusters_plot_DTU <- clusters_plot_DTU + 
+  labs(title = 'DTU transcript clusters') +
+  theme(plot.title = element_text(size=16, color='black', face='bold', hjust =0))
+
+clusters_plot_DE + (clusters_plot_DTU/plot_spacer() + plot_layout(heights = c(5.5,1))) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag = element_text(size = 16, face = 'bold')) &
+  theme(plot.background = element_rect(fill = "white", colour = "white"))
+
+```
+
+
+```{r}
+#| include: false
+# An analysis of established and published Arabidopsis clock ChIP targets in TF network
+# read the TF network cluster
+# The TF network is 7302 genes over 75 clusters (clusters 0-74)
+TF <- read_csv("./00_raw_data/TF Network Cluster Nov2018.csv", 
+               show_col_types = FALSE) %>%
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster", 
+               values_to = "gene_ID",
+               values_drop_na = TRUE) %>% 
+  filter(grepl('AT', gene_ID)) %>%
+  mutate(cluster = str_sub(cluster, 9, -1))
+
+# LHY dataset
+# read in the Adams LHY paper dataset and skip first 2 lines
+# The LHY paper is Adams et al. (2018) New Phytologist 220(3); 897
+# supplemental data set (Table S2)
+adams <- read_csv("./00_raw_data/nph15415-sup-0002-tables2.csv",skip=2, 
+                  show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 1) %>%
+  filter(!is.na(gene_ID)) %>%
+  distinct(gene_ID)
+
+# find the common features of TF and adams based on the gene_ID column
+TF_adams_merge <-inner_join (TF, adams, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'LHY')
+
+# CCA1 Nagel et al. dataset
+# read in the Nagel CCA1 paper dataset and skip first 2 lines
+# The CCA1 paper is Nagel et al. (2015) PNAS 112(34); E4802
+# supplemental data set (Table S1) 
+nagel <- read_csv("./00_raw_data/pnas.1513609112.sd01.csv",skip=2, 
+                  show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 10) %>% 
+  mutate(gene_ID = str_sub(gene_ID, end = 9)) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and nagel based on the gene_ID column
+TF_nagel_merge <-inner_join (TF, nagel, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'CCA1') 
+
+# CCA1 Kamioka et al. dataset
+# read in the Kamioka CCA1 paper dataset and skip first 2 lines
+# The CCA1 paper is Kamioka et al. (2016) Plant Cell 28(3); 696
+# supplemental data set (Table S1C)
+kamioka <- read_csv("./00_raw_data/TPC2015-00737-RAR3_Supplemental_Data_Set_1C.csv",skip=3, 
+                    show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 10) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and nagel based on the gene_ID column
+TF_kamioka_merge <- inner_join (TF, kamioka, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'CCA1') 
+
+# merge the nagel and kamioka CCA1 datasets
+# use inner_join from dplyr
+# 249 obs.
+kamioka_nagel_merge <- inner_join(nagel, kamioka, by = "gene_ID")
+
+# find the common features of TF and kamioka-nagel based on the gene_ID column
+# use inner_join from dplyr
+# 143 obs.
+TF_kamioka_nagel_merge <- inner_join(TF, kamioka_nagel_merge, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'CCA1') 
+
+# TOC1 dataset
+# read in the Huang TOC1 paper dataset
+# The TOC1 paper is Huang et al. (2012) Science 336:75
+# supplemental data set (Table S1)
+huang <- read_csv("./00_raw_data/Huang TOC1 CHiP TableS1.csv",
+                  show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 14) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and huang on the gene_ID column
+TF_huang_merge <-inner_join (TF, huang, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'TOC1') 
+
+# PRR5 dataset
+# read in the Nakamichi PRR5 paper dataset
+# The PRR5 paper is Nakamichi et al. (2012) PNAS 109:17123
+# supplemental data set (Table S3) 
+nakamichi <- read_csv("./00_raw_data/Dataset S3 Nakamichi et al PRR5 binding targets PNAS 2012.csv", skip=2,
+                      show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 3) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and nakamichi on the gene_ID column
+TF_nakamichi_merge <-inner_join (TF, nakamichi, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'PRR5') 
+
+# PRR7 dataset
+# read in the Liu PRR7 paper dataset
+# The PRR7 paper is Liu et al. (2013) The Plant Journal 76:101
+# supplemental data set (Table S1)
+liu <- read_csv("./00_raw_data/Dataset S1 Liu et al PRR7 edit.csv",
+                show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 17) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and liu on the gene_ID column
+TF_liu_merge <-inner_join (TF, liu, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'PRR7') 
+
+# LUX dataset
+# read in the Ezer EC paper for the LUX dataset (LUX_17 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (LUX_17 tab of Table S6) 
+ezer_LUX <- read_csv("./00_raw_data/Ezer et al nplants Suppl Table S6.csv",
+                     show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and ezer_LUX on the gene_ID column
+TF_ezer_LUX_merge <-inner_join (TF, ezer_LUX, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'LUX') 
+
+# ELF3 dataset
+# read in the Ezer EC paper for the ELF3 dataset (ELF3_22 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (ELF3_22 tab of Table S6) 
+ezer_ELF3 <- read_csv("./00_raw_data/ELF3_22 Ezer Table S6.csv",
+                      show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and ezer_ELF3 on the gene_ID column
+TF_ezer_ELF3_merge <-inner_join (TF, ezer_ELF3, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'ELF3') 
+
+# ELF4 dataset
+# read in the Ezer EC paper for the ELF4 dataset (ELF4_22 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (ELF4_22 tab of Table S6) 
+ezer_ELF4 <- read_csv("./00_raw_data/ELF4_22 Ezer Table S6.csv",
+                      show_col_types = FALSE) %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# find the common features of TF and ezer_ELF4 on the gene_ID column
+TF_ezer_ELF4_merge <-inner_join (TF, ezer_ELF4, by = "gene_ID") %>% 
+  arrange(nchar(cluster), cluster) %>% 
+  mutate(clock = 'ELF4') 
+
+```
+
+
+|           *trans* factor            |   Publication    |         Dataset         |  Epitope   | No. of *cis* targets |                                     No. (%) in the TF network                                     |
+|:--------:|:--------:|:--------:|:--------:|:--------:|:----------------------:|
+|   LATE ELONGATED HYPOCOTYL (LHY)    |   Adams *et al.*[@RN487]   |        Table S2         | native LHY |   `r nrow(adams)`    |       `r nrow(TF_adams_merge)` (`r sprintf("%.1f", nrow(TF_adams_merge)/nrow(adams)*100)`%)       |
+| CIRCADIAN CLOCK ASSOCIATED-1 (CCA1) |   Nagel *et al.*[@RN445]   |        Table S1         |  GFP-CCA1  |   `r nrow(nagel)`    |       `r nrow(TF_nagel_merge)` (`r sprintf("%.1f", nrow(TF_nagel_merge)/nrow(nagel)*100)`%)       |
+| CIRCADIAN CLOCK ASSOCIATED-1 (CCA1) |  Kamioka *et al.*[@RN486]  |        Table S1C        | CCA1-FLAG  |  `r nrow(kamioka)`   |    `r nrow(TF_kamioka_merge)` (`r sprintf("%.1f", nrow(TF_kamioka_merge)/nrow(kamioka)*100)`%)    |
+|  TIMING OF CAB2 EXPRESSION1 (TOC1)  |   Huang *et al.*[@RN679]   |        Table S1         |  TOC1-YFP  |   `r nrow(huang)`    |       `r nrow(TF_huang_merge)` (`r sprintf("%.1f", nrow(TF_huang_merge)/nrow(huang)*100)`%)       |
+|         LUX ARRYTHMO (LUX)          |   Ezer *et al.*[@RN371]    | LUX_17 tab of Table S6  |  LUX-GFP   |  `r nrow(ezer_LUX)`  |  `r nrow(TF_ezer_LUX_merge)` (`r sprintf("%.1f", nrow(TF_ezer_LUX_merge)/nrow(ezer_LUX)*100)`%)   |
+|       EARLY FLOWERING3 (ELF3)       |   Ezer *et al.*[@RN371]    | ELF3_22 tab of Table S6 |  ELF3-MYC  | `r nrow(ezer_ELF3)`  | `r nrow(TF_ezer_ELF3_merge)` (`r sprintf("%.1f", nrow(TF_ezer_ELF3_merge)/nrow(ezer_ELF3)*100)`%) |
+|       EARLY FLOWERING4 (ELF4)       |   Ezer *et al.*[@RN371]    | ELF4_22 tab of Table S6 |  ELF4-HA   | `r nrow(ezer_ELF4)`  | `r nrow(TF_ezer_ELF4_merge)` (`r sprintf("%.1f", nrow(TF_ezer_ELF4_merge)/nrow(ezer_ELF4)*100)`%) |
+|  PSEUDO-RESPONSE REGULATOR7 (PRR7)  |    Liu *et al.*[@RN680]    |       Dataset S1        |  HA-PRR7   |    `r nrow(liu)`     |          `r nrow(TF_liu_merge)` (`r sprintf("%.1f", nrow(TF_liu_merge)/nrow(liu)*100)`%)          |
+|  PSEUDO-RESPONSE REGULATOR5 (PRR5)  | Nakamichi *et al.*[@RN681] |        Table S3         | PRR5-FLAG  | `r nrow(nakamichi)`  | `r nrow(TF_nakamichi_merge)` (`r sprintf("%.1f", nrow(TF_nakamichi_merge)/nrow(nakamichi)*100)`%) |
+
+: Arabidopsis Clock ChIP data-sets and their overlap with the cold TF network [@RN429] {#tbl-Clock ChIP data-sets}
+
+```{r data_chips_in_clusters}
+
+# TF CLUSTERS and GENE_IDs----
+
+# An analysis of established and published Arabidopsis clock ChIP targets in TF network
+# read the TF network clusters
+# The DE network (Suppl dataset 7A) is 6810 genes over 12 clusters (clusters 1-12)
+
+calixto_S7A <- read_csv("./00_raw_data/Calixto_suppl_dataset_7A_DE.csv", show_col_types = FALSE) %>%
+  select(2:13) %>% 
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster", 
+               values_to = "gene_ID",
+               values_drop_na = TRUE) %>% 
+  filter(grepl('AT', gene_ID)) %>%
+  mutate(cluster = str_sub(cluster, 9, -1)) 
+
+# The DTU network (Suppl dataset 7B) is 3972 genes over 10 clusters (clusters 1-10)
+calixto_S7B <- read_csv("./00_raw_data/Calixto_suppl_dataset_7B_DTU.csv", show_col_types = FALSE) %>%
+  select(2:11) %>% 
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster", 
+               values_to = "gene_ID",
+               values_drop_na = TRUE) %>% 
+  filter(grepl('AT', gene_ID)) %>%
+  mutate(cluster = str_sub(cluster, 9, -1),
+         gene_ID = str_sub(gene_ID, 1, 9))
+
+# CLOCK ChIP DATASETS----
+
+# *LHY----
+
+# LHY dataset
+# read in the Adams LHY paper dataset and skip first 2 lines
+# The LHY paper is Adams et al. (2018) New Phytologist 220(3); 897
+# supplemental data set (Table S2) 
+adams <- read_csv("./00_raw_data/nph15415-sup-0002-tables2.csv",skip=2) %>% 
+  dplyr::select(gene_ID = 1) %>%
+  filter(!is.na(gene_ID)) %>%
+  distinct(gene_ID) 
+
+# CCA1----
+# CCA1 Nagel----
+
+# CCA1 Nagel et al. dataset
+# read in the Nagel CCA1 paper dataset and skip first 2 lines
+# The CCA1 paper is Nagel et al. (2015) PNAS 112(34); E4802
+# supplemental data set (Table S1) 
+nagel <- read_csv("./00_raw_data/pnas.1513609112.sd01.csv",skip=2) %>% 
+  dplyr::select(gene_ID = 10) %>% 
+  mutate(gene_ID = str_sub(gene_ID, end = 9)) %>% 
+  distinct(gene_ID) 
+
+# CCA1 Kamioka----
+
+# CCA1 Kamioka et al. dataset
+# read in the Kamioka CCA1 paper dataset and skip first 2 lines
+# The CCA1 paper is Kamioka et al. (2016) Plant Cell 28(3); 696
+# supplemental data set (Table S1C)
+kamioka <- read_csv("./00_raw_data/TPC2015-00737-RAR3_Supplemental_Data_Set_1C.csv",skip=3) %>% 
+  dplyr::select(gene_ID = 10) %>% 
+  distinct(gene_ID) 
+
+# Nagel-Kamioka merge----
+
+# merge the nagel and kamioka CCA1 datasets
+# use inner_join from dplyr
+# 249 obs.
+kamioka_nagel_merge <- inner_join(nagel, kamioka, by = "gene_ID")
+
+# TOC1----
+
+# TOC1 dataset
+# read in the Huang TOC1 paper dataset
+# The TOC1 paper is Huang et al. (2012) Science 336:75
+# supplemental data set (Table S1)
+huang <- read_csv("./00_raw_data/Huang TOC1 CHiP TableS1.csv") %>% 
+  dplyr::select(gene_ID = 14) %>% 
+  distinct(gene_ID) 
+
+# PRR5----
+
+# PRR5 dataset
+# read in the Nakamichi PRR5 paper dataset
+# The PRR5 paper is Nakamichi et al. (2012) PNAS 109:17123
+# supplemental data set (Table S3) 
+nakamichi <- read_csv("./00_raw_data/Dataset S3 Nakamichi et al PRR5 binding targets PNAS 2012.csv", skip=2) %>% 
+  dplyr::select(gene_ID = 3) %>% 
+  distinct(gene_ID)
+
+# PRR7----
+
+# PRR7 dataset
+# read in the Liu PRR7 paper dataset
+# The PRR7 paper is Liu et al. (2013) The Plant Journal 76:101
+# supplemental data set (Table S1)
+liu <- read_csv("./00_raw_data/Dataset S1 Liu et al PRR7 edit.csv") %>% 
+  dplyr::select(gene_ID = 17) %>% 
+  distinct(gene_ID) 
+
+# LUX----
+
+# LUX dataset
+# read in the Ezer EC paper for the LUX dataset (LUX_17 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (LUX_17 tab of Table S6) 
+ezer_LUX <- read_csv("./00_raw_data/Ezer et al nplants Suppl Table S6.csv") %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# ELF3----
+
+# ELF3 dataset
+# read in the Ezer EC paper for the ELF3 dataset (ELF3_22 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (ELF3_22 tab of Table S6) 
+ezer_ELF3 <- read_csv("./00_raw_data/ELF3_22 Ezer Table S6.csv") %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# ELF4----
+
+# ELF4 dataset
+# read in the Ezer EC paper for the ELF4 dataset (ELF4_22 tab)
+# The Evening Complex (EC) paper is Ezer et al. (2017) Nature Plants 3: article 17087
+# supplemental data set (ELF4_22 tab of Table S6) 
+ezer_ELF4 <- read_csv("./00_raw_data/ELF4_22 Ezer Table S6.csv") %>% 
+  dplyr::select(gene_ID = 1) %>% 
+  distinct(gene_ID) 
+
+# MERGE TF with CLOCK TARGETS----
+merge_TF_clock <- function(network, df, clock_id){
+  
+  merge <- inner_join(network, df, by = 'gene_ID') %>%
+    arrange(nchar(cluster), cluster) %>% 
+    mutate(clock = {{clock_id}})
+  
+  return(merge)
+}
+
+# DE merge
+DE_adams_merge <- merge_TF_clock(calixto_S7A, adams, 'LHY')
+DE_nagel_merge <- merge_TF_clock(calixto_S7A, nagel, 'CCA1')
+DE_kamioka_merge <- merge_TF_clock(calixto_S7A, kamioka, 'CCA1')
+DE_kamioka_nagel_merge <- merge_TF_clock(calixto_S7A, kamioka_nagel_merge, 'CCA1')
+DE_huang_merge <- merge_TF_clock(calixto_S7A, huang, 'TOC1')
+DE_nakamichi_merge <- merge_TF_clock(calixto_S7A, nakamichi, 'PRR5')
+DE_liu_merge <- merge_TF_clock(calixto_S7A, liu, 'PRR7')
+DE_ezer_LUX_merge <- merge_TF_clock(calixto_S7A, ezer_LUX, 'LUX')
+DE_ezer_ELF3_merge <- merge_TF_clock(calixto_S7A, ezer_ELF3, 'ELF3')
+DE_ezer_ELF4_merge <- merge_TF_clock(calixto_S7A, ezer_ELF4, 'ELF4')
+
+# DTU merge
+DTU_adams_merge <- merge_TF_clock(calixto_S7B, adams, 'LHY')
+DTU_nagel_merge <- merge_TF_clock(calixto_S7B, nagel, 'CCA1')
+DTU_kamioka_merge <- merge_TF_clock(calixto_S7B, kamioka, 'CCA1')
+DTU_kamioka_nagel_merge <- merge_TF_clock(calixto_S7B, kamioka_nagel_merge, 'CCA1')
+DTU_huang_merge <- merge_TF_clock(calixto_S7B, huang, 'TOC1')
+DTU_nakamichi_merge <- merge_TF_clock(calixto_S7B, nakamichi, 'PRR5')
+DTU_liu_merge <- merge_TF_clock(calixto_S7B, liu, 'PRR7')
+DTU_ezer_LUX_merge <- merge_TF_clock(calixto_S7B, ezer_LUX, 'LUX')
+DTU_ezer_ELF3_merge <- merge_TF_clock(calixto_S7B, ezer_ELF3, 'ELF3')
+DTU_ezer_ELF4_merge <- merge_TF_clock(calixto_S7B, ezer_ELF4, 'ELF4')
+
+```
+
+
 ## Data & Methods {#sec-data-methods}
 
 ## Conclusion
 
-## References {.unnumbered}
+## References {.numbered}
 
 :::{#refs}
 
