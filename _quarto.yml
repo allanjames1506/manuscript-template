@@ -3,14 +3,18 @@ project:
 
 execute:
   freeze: auto
-  fig-width: 6
-  fig-asp: 0.618
+  fig-width: 8
+  fig-height: 16
+  #fig-asp: 0.618
   message: false
   warning: false
 
 format:
   html:
     toc: true
+    fig-width: 7
+    fig-asp: 1.618
+    fig-align: "center"
     comments:
       hypothesis: true
   docx: default
