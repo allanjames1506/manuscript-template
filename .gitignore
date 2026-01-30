@@ -16,5 +16,6 @@
 .DS_Store
 .bib
 .pptx
+.png
 
 **/*.quarto_ipynb
