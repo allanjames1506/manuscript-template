@@ -379,24 +379,24 @@ ggsave(combined_DE_DTU, file = './03_plots/combined_DE_DTU1.png', width=12, heig
 # # read the TF network clusters
 # # The DE network (Suppl dataset 7A) is 6810 genes over 12 clusters (clusters 1-12)
 # 
-# calixto_S7A <- read_csv("./00_raw_data/Calixto_suppl_dataset_7A_DE.csv") %>%
-#   select(2:13) %>% 
-#   pivot_longer(cols = starts_with ('cluster'),
-#                names_to = "cluster", 
-#                values_to = "gene_ID",
-#                values_drop_na = TRUE) %>% 
-#   filter(grepl('AT', gene_ID)) %>%
-#   mutate(cluster = str_sub(cluster, 9, -1))
-# 
-# calixto_S7B <- read_csv("./00_raw_data/Calixto_suppl_dataset_7B_DTU.csv") %>%
-#   select(2:11) %>% 
-#   pivot_longer(cols = starts_with ('cluster'),
-#                names_to = "cluster", 
-#                values_to = "gene_ID",
-#                values_drop_na = TRUE) %>% 
-#   filter(grepl('AT', gene_ID)) %>%
-#   mutate(cluster = str_sub(cluster, 9, -1),
-#          gene_ID = str_sub(gene_ID, 1, 9))
+calixto_S7A <- read_csv("./00_raw_data/Calixto_suppl_dataset_7A_DE.csv") %>%
+  select(2:13) %>%
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster",
+               values_to = "gene_ID",
+               values_drop_na = TRUE) %>%
+  filter(grepl('AT', gene_ID)) %>%
+  mutate(cluster = str_sub(cluster, 9, -1))
+
+calixto_S7B <- read_csv("./00_raw_data/Calixto_suppl_dataset_7B_DTU.csv") %>%
+  select(2:11) %>%
+  pivot_longer(cols = starts_with ('cluster'),
+               names_to = "cluster",
+               values_to = "gene_ID",
+               values_drop_na = TRUE) %>%
+  filter(grepl('AT', gene_ID)) %>%
+  mutate(cluster = str_sub(cluster, 9, -1),
+         gene_ID = str_sub(gene_ID, 1, 9))
 # 
 # calixto_S7B_summary <- calixto_S7B %>% 
 #   group_by(gene_ID) %>% 
@@ -864,9 +864,9 @@ calixto_S7B_summary_plot / CHIP_merge_plot +
   theme(plot.background = element_rect(fill = "white", colour = "white"))
 
 # Plots combined
-combined_merge_table <- CHIP_merge_plot  / wrap_table(gt_tbl, space = 'fixed')
-  plot_annotation(tag_levels = 'A') &
-  theme(plot.tag = element_text(size = 16, face = 'bold'))
+# combined_merge_table <- CHIP_merge_plot  / wrap_table(gt_tbl, space = 'fixed')
+#   plot_annotation(tag_levels = 'A') &
+#   theme(plot.tag = element_text(size = 16, face = 'bold'))
 
 # 6 MetaCycle - RHYTHMIC SIGNALS----
   
@@ -940,6 +940,38 @@ DE_day1_vs_day2 <- full_join(DE_day1_output, DE_day2_output, by = "cluster") %>%
   mutate(cluster_id = as.character(paste(1:12))) %>% 
   relocate(cluster_id)
 
+glimpse(DE_day1_vs_day2)
+
+levels(DE_day1_vs_day2$sig_flag)
+
+DE_day1_vs_day2$amp_flag <- factor(DE_day1_vs_day2$amp_flag, levels = c("gain_high", "gain_medium", "lose_high", "lose_medium"))
+
+DE_day1_vs_day2$sig_flag <- factor(DE_day1_vs_day2$sig_flag, levels = c("nr-nr", "r-nr", "r-r"))
+
+write_csv(DE_day1_vs_day2, './01_tidy_data/DE_day1_vs_day2_150.csv')
+
+DE_day1_vs_day2_dummy <- full_join(DE_day1_output, DE_day2_output, by = "cluster") %>% 
+  mutate(AMP_change = d2_AMP/d1_AMP *60) %>%
+  mutate(d1_sig = case_when(cluster == 'cluster_12' ~ d1_sig + 0.02, TRUE ~ d1_sig),
+         d2_sig = case_when(cluster == 'cluster_12' ~ d2_sig + 0.02, TRUE ~ d2_sig),
+         d2_sig = d2_sig - 0.03) %>% 
+  mutate(sig_flag = case_when(d1_sig > 0.05 & d2_sig > 0.05 ~ 'nr-nr', 
+                              d1_sig <= 0.05 & d2_sig > 0.05 ~ 'r-nr',
+                              d1_sig > 0.05 & d2_sig <= 0.05 ~ 'nr-r',
+                              d1_sig <= 0.05 & d2_sig <= 0.05 ~ 'r-r',
+                              TRUE ~ 'rhythmic')) %>% 
+  mutate(amp_flag = case_when(AMP_change <= 66.6  & AMP_change > 33.3 ~ 'lose_medium',
+                              AMP_change <= 33.3 ~ 'lose_high',
+                              AMP_change >= 150 & AMP_change < 300 ~ 'gain_medium',
+                              AMP_change >= 300 ~ 'gain_high',
+                              TRUE ~ 'other')) %>% 
+  mutate(cluster_id = as.character(paste(1:12))) %>% 
+  relocate(cluster_id)
+
+#table(DE_day1_vs_day2_dummy$amp_flag)
+
+write_csv(DE_day1_vs_day2_dummy, './01_tidy_data/DE_day1_vs_day2_150_dummy.csv')
+
 # **6.1.2 DTU d1 vs d2----
 # compare d1 vs d2 and set rules for classifying amplitude and rhythm changes between days
 # _150 means 1.5 fold up or down difference in amplitude
@@ -958,7 +990,18 @@ DTU_day1_vs_day2 <- full_join(DTU_day1_output, DTU_day2_output, by = "cluster") 
   mutate(cluster_id = as.character(paste(1:10))) %>% 
   relocate(cluster_id)
 
-# **6.1.3 DE d1 vs d5----
+glimpse(DTU_day1_vs_day2)
+
+levels(DTU_day1_vs_day2$sig_flag)
+
+DTU_day1_vs_day2$amp_flag <- factor(DTU_day1_vs_day2$amp_flag, levels = c("gain_high", "gain_medium", "lose_medium", "other"))
+
+DTU_day1_vs_day2$sig_flag <- factor(DTU_day1_vs_day2$sig_flag, levels = c("r-nr", "r-r"))
+
+write_csv(DTU_day1_vs_day2, './01_tidy_data/DTU_day1_vs_day2_150.csv')
+
+# *6.2 compare d1d5----
+# **6.2.1 DE d1 vs d5----
 # compare d1 vs d5 and set rules for classifying amplitude and rhythm changes between days
 # _150 means 1.5 fold up or down difference in amplitude
 DE_day1_vs_day5 <- full_join(DE_day1_output, DE_day5_output, by = "cluster") %>% 
@@ -973,21 +1016,18 @@ DE_day1_vs_day5 <- full_join(DE_day1_output, DE_day5_output, by = "cluster") %>%
                               AMP_change >= 150 & AMP_change < 300 ~ 'gain_medium',
                               AMP_change >= 300 ~ 'gain_high',
                               TRUE ~ 'other')) %>% 
-  mutate(cluster_id = as.character(paste(1:12)),
-         colour = case_when(amp_flag %in% 'gain_high' ~ '#e41a1c',
-                            amp_flag %in% 'gain_medium' ~ '#377eb8',
-                            amp_flag %in% 'lose_high' ~ '#4daf4a',
-                            amp_flag %in% 'lose_medium' ~ '#984ea3',
-                            amp_flag %in% 'gain_high' ~ '#ff7f00',
-                            amp_flag %in% 'other' ~ '#bababa',
-                            TRUE ~ NA)) %>% 
+  mutate(cluster_id = as.character(paste(1:12))) %>% 
   relocate(cluster_id)
+
+levels(DE_day1_vs_day5$sig_flag)
 
 DE_day1_vs_day5$amp_flag <- factor(DE_day1_vs_day5$amp_flag, levels = c("lose_high", "lose_medium", "other"))
 
-levels(DE_day1_vs_day5$amp_flag)
+DE_day1_vs_day5$sig_flag <- factor(DE_day1_vs_day5$sig_flag, levels = c("r-nr", "nr-r", "r-r"))
 
-# **6.1.4 DTU d1 vs d5----
+write_csv(DE_day1_vs_day5, './01_tidy_data/DE_day1_vs_day5_150.csv')
+
+# **6.2.2 DTU d1 vs d5----
 # compare d1 vs d5 and set rules for classifying amplitude and rhythm changes between days
 # _150 means 1.5 fold up or down difference in amplitude
 DTU_day1_vs_day5 <- full_join(DTU_day1_output, DTU_day5_output, by = "cluster") %>% 
@@ -1005,59 +1045,115 @@ DTU_day1_vs_day5 <- full_join(DTU_day1_output, DTU_day5_output, by = "cluster") 
   mutate(cluster_id = as.character(paste(1:10))) %>% 
   relocate(cluster_id)
 
+levels(DTU_day1_vs_day5$sig_flag)
+
+DTU_day1_vs_day5$amp_flag <- factor(DTU_day1_vs_day5$amp_flag, levels = c("gain_medium", "lose_high", "lose_medium", "other"))
+
+DTU_day1_vs_day5$sig_flag <- factor(DTU_day1_vs_day5$sig_flag, levels = c("r-nr", "r-r"))
+
+
+write_csv(DTU_day1_vs_day5, './01_tidy_data/DTU_day1_vs_day5_150.csv')
+
 # 7 MetaCycle SCATTER PLOTS----
 
 # *7.1 compare cluster amplitudes----
 # **7.1.1 DE----
 # Scatter plot of the MetaCycle outputs for Amplitude coloured by the amp_flag grouping
+
+possible_amp_patterns <- c("gain-high", "gain-medium", "lose-high", "lose-medium", "other")
+pal = c('#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#bababa')
+pal2 <- c('#31a354', '#74c476', '#de2d26','#fb6a4a', '#bababa')
+breaks = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")
+
 DE_plot_day1_vs_day2_AMP <- DE_day1_vs_day2 %>% 
   #filter(pval_flag == 'd1_nr_d2_r' | pval_flag == 'd1_r_d2_nr' | pval_flag == 'd1_r_d2_r') %>%
   ggplot(aes(x = d1_AMP, y = d2_AMP, colour = amp_flag, shape = sig_flag)) +
   scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
   scale_x_continuous(limits = c(0, 1.8), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 4, alpha = 0.75) +
   ggpubr::theme_pubr() +
-  theme(legend.position = "bottom", 
+  theme(text = element_text(family = 'Arial'),
+        legend.position = "bottom", 
         legend.key = element_blank(),
         legend.box.background = element_rect(color = "black"),
-        legend.box.margin = margin(t = 1, l = 1),
+        legend.box.margin = margin(t = 2, r = 2, b = 2, l = 2),
         plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
         plot.subtitle = element_text(color = "grey30", hjust = 0.5),
         axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
         axis.title.x = element_text(face = 'bold')) +
-  scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  #scale_fill_discrete(limits = possible_amp_patterns, drop = FALSE) +
+  scale_color_manual(values = pal2) +
+  #scale_fill_manual(values = pal2) +
+  #scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_shape_manual(values=c(16, 15, 18)) +
   geom_text_repel(aes(label = cluster_id), 
                   show.legend = FALSE,
                   max.overlaps = nrow(DE_day1_vs_day2)) +
   labs(colour = "Amplitude", shape = "Rhythm",
        y= "day 2 \namplitude", x = "day 1 amplitude") +
-  ggtitle("Day 1 vs Day 2",
+  ggtitle("DE: Day 1 vs Day 2",
           subtitle = "transition from 20C to 4C") +
   guides(colour = guide_legend(order = 1, nrow = 2),
          shape  = guide_legend(order = 0, nrow = 2))
 
+# for shared legend with all 5 amp_flags
+DE_plot_day1_vs_day2_AMP_dummy <- DE_day1_vs_day2_dummy %>% 
+  #filter(pval_flag == 'd1_nr_d2_r' | pval_flag == 'd1_r_d2_nr' | pval_flag == 'd1_r_d2_r') %>%
+  ggplot(aes(x = d1_AMP, y = d2_AMP, colour = amp_flag, shape = sig_flag)) +
+  scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
+  scale_x_continuous(limits = c(0, 1.8), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
+  geom_point(size = 4, alpha = 0.75) +
+  ggpubr::theme_pubr() +
+  theme(text = element_text(family = 'Arial'),
+        legend.position = "bottom", 
+        legend.key = element_blank(),
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 2, r = 2, b = 2, l = 2),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x = element_text(face = 'bold')) +
+  #scale_fill_discrete(limits = possible_amp_patterns, drop = FALSE) +
+  scale_color_manual(values = pal2) +
+  #scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_shape_manual(values=c(16, 17, 15, 18)) +
+  geom_text_repel(aes(label = cluster_id), 
+                  show.legend = FALSE,
+                  max.overlaps = nrow(DE_day1_vs_day2)) +
+  labs(colour = "Amplitude", shape = "Rhythm",
+       y= "day 2 \namplitude", x = "day 1 amplitude") +
+  ggtitle("DE: Day 1 vs Day 2",
+          subtitle = "transition from 20C to 4C") +
+  guides(colour = guide_legend(order = 1, nrow = 2),
+         shape  = guide_legend(order = 0, nrow = 2))
+
+shared_legend_scat <- cowplot::get_plot_component(DE_plot_day1_vs_day2_AMP_dummy, "guide-box", return_all = TRUE)[[3]]
+
 DE_plot_day1_vs_day5_AMP <- DE_day1_vs_day5 %>% 
   #filter(pval_flag == 'd1_nr_d2_r' | pval_flag == 'd1_r_d2_nr' | pval_flag == 'd1_r_d2_r') %>%
   ggplot(aes(x = d1_AMP, y = d5_AMP, colour = amp_flag, shape = sig_flag)) +
-  scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
+  scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6), position = "right") +
   scale_x_continuous(limits = c(0, 1.8), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 4, alpha = 0.75) +
   ggpubr::theme_pubr() +
-  theme(legend.position = "bottom", 
+  theme(text = element_text(family = 'Arial'),
+        legend.position = "bottom", 
         legend.key = element_blank(),
         legend.box.background = element_rect(color = "black"),
         legend.box.margin = margin(t = 1, l = 1),
         plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
         plot.subtitle = element_text(color = "grey30", hjust = 0.5),
-        axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold'),
         axis.title.x = element_text(face = 'bold')) +
-  scale_colour_brewer(palette = "Set1", labels = c("lose - high", "lose - medium", "other")) +
+  scale_colour_manual(values = c('#de2d26','#fb6a4a', '#bababa')) +
+  #scale_colour_brewer(palette = "Set1", labels = c("lose - high", "lose - medium", "other")) +
+  scale_shape_manual(values=c(15, 17, 18)) +
   geom_text_repel(aes(label = cluster_id), 
                   show.legend = FALSE,
-                  max.overlaps = nrow(DE_day1_vs_day2)) +
+                  max.overlaps = nrow(DE_day1_vs_day5)) +
   labs(colour = "Amplitude", shape = "Rhythm",
        y= "day 5 \namplitude", x = "day 1 amplitude") +
-  ggtitle("Day 1 vs Day 5",
+  ggtitle("DE: Day 1 vs Day 5",
           subtitle = "acclimation to 4C") +
   guides(colour = guide_legend(order = 1, nrow = 2),
          shape  = guide_legend(order = 0, nrow = 2))
@@ -1069,9 +1165,10 @@ DTU_plot_day1_vs_day2_AMP <- DTU_day1_vs_day2 %>%
   ggplot(aes(x = d1_AMP, y = d2_AMP, colour = amp_flag, shape = sig_flag)) +
   scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
   scale_x_continuous(limits = c(0, 1.8), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 4, alpha = 0.75) +
   ggpubr::theme_pubr() +
-  theme(legend.position = "bottom", 
+  theme(text = element_text(family = 'Arial'),
+        legend.position = "bottom", 
         legend.key = element_blank(),
         legend.box.background = element_rect(color = "black"),
         legend.box.margin = margin(t = 1, l = 1),
@@ -1079,13 +1176,15 @@ DTU_plot_day1_vs_day2_AMP <- DTU_day1_vs_day2 %>%
         plot.subtitle = element_text(color = "grey30", hjust = 0.5),
         axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
         axis.title.x = element_text(face = 'bold')) +
-  scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_colour_manual(values = c('#31a354', '#74c476','#fb6a4a', '#bababa')) +
+  #scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_shape_manual(values=c(15, 18)) +
   geom_text_repel(aes(label = cluster_id), 
                   show.legend = FALSE,
                   max.overlaps = nrow(DE_day1_vs_day2)) +
   labs(colour = "Amplitude", shape = "Rhythm",
        y= "day 2 \namplitude", x = "day 1 amplitude") +
-  ggtitle("Day 1 vs Day 2",
+  ggtitle("DTU: Day 1 vs Day 2",
           subtitle = "transition from 20C to 4C") +
   guides(colour = guide_legend(order = 1, nrow = 2),
          shape  = guide_legend(order = 0, nrow = 2))
@@ -1093,27 +1192,1275 @@ DTU_plot_day1_vs_day2_AMP <- DTU_day1_vs_day2 %>%
 DTU_plot_day1_vs_day5_AMP <- DTU_day1_vs_day5 %>% 
   #filter(pval_flag == 'd1_nr_d2_r' | pval_flag == 'd1_r_d2_nr' | pval_flag == 'd1_r_d2_r') %>%
   ggplot(aes(x = d1_AMP, y = d5_AMP, colour = amp_flag, shape = sig_flag)) +
-  scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
+  scale_y_continuous(limits = c(0, 1.6), breaks = c(0, 0.4, 0.8, 1.2, 1.6), position = "right") +
   scale_x_continuous(limits = c(0, 1.8), breaks = c(0, 0.4, 0.8, 1.2, 1.6)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 4, alpha = 0.75) +
   ggpubr::theme_pubr() +
-  theme(legend.position = "bottom", 
+  theme(text = element_text(family = 'Arial'),
+        legend.position = "bottom", 
         legend.key = element_blank(),
         legend.box.background = element_rect(color = "black"),
         legend.box.margin = margin(t = 1, l = 1),
         plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
         plot.subtitle = element_text(color = "grey30", hjust = 0.5),
-        axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold'),
         axis.title.x = element_text(face = 'bold')) +
-  scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_colour_manual(values = c('#74c476', '#de2d26','#fb6a4a', '#bababa')) +
+  #scale_colour_brewer(palette = "Set1", labels = c("gain - high", "gain - medium", "lose - high", "lose - medium", "other")) +
+  scale_shape_manual(values=c(15, 18)) +
   geom_text_repel(aes(label = cluster_id), 
                   show.legend = FALSE,
                   max.overlaps = nrow(DE_day1_vs_day2)) +
   labs(colour = "Amplitude", shape = "Rhythm",
        y= "day 5 \namplitude", x = "day 1 amplitude") +
-  ggtitle("Day 1 vs Day 5",
+  ggtitle("DTU: Day 1 vs Day 5",
           subtitle = "acclimation to 4C") +
   guides(colour = guide_legend(order = 1, nrow = 2),
          shape  = guide_legend(order = 0, nrow = 2))
+
+p_panel <- plot_grid(DE_plot_day1_vs_day2_AMP + theme(legend.position="none"), 
+                     DE_plot_day1_vs_day5_AMP + theme(legend.position="none"), 
+                     DTU_plot_day1_vs_day2_AMP + theme(legend.position="none"),
+                     DTU_plot_day1_vs_day5_AMP + theme(legend.position="none"), 
+                     labels = 'AUTO', ncol = 2,
+                     label_size = 16)
+
+p_panel_legend <- plot_grid(p_panel, shared_legend_scat, ncol = 1, rel_heights = c(1, 0.1)) +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.margin = unit(c(5,5,5,5), 'pt'))
+
+ggsave('./03_plots/p_panel_legend.png', dpi = 300, height = 9, width = 9, units = 'in')
+
+# 8 Amplitude and Rhythm cluster group summaries----
+# *8.1 DE Amplitude----
+
+DE_amp_summary_day1_vs_day2_150_AMP <- DE_day1_vs_day2 %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>% 
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'd1d2')
+
+DE_amp_summary_day1_vs_day5_150_AMP <- DE_day1_vs_day5 %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'd1d5') 
+
+DE_amp_summary_table <- bind_rows(DE_amp_summary_day1_vs_day2_150_AMP, DE_amp_summary_day1_vs_day5_150_AMP) %>% 
+  dplyr::rename(group = amp_flag_simplified)
+
+DE_amp_percent_graph <- DE_amp_summary_table %>% 
+  ggplot(aes(x = condition, y = percent, fill = factor(group, levels = c('gain', 'lose', 'other')))) + 
+  geom_bar(stat = "identity", width = 0.5, alpha = 0.9) +
+  scale_y_continuous(breaks=seq(0,100,100)) +
+  scale_x_discrete(labels=c('Day 1\n vs\n Day 2', 'Day 1\n vs\n Day 5')) +
+  scale_fill_manual(values = c("#31a354", "#de2d26", "#bababa"), name = "", labels = c("gain", "lose", "other")) +
+  #scale_fill_manual(values = c("darkolivegreen3", "palevioletred", "grey80"), name = "", labels = c("gain", "lose", "other")) +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent),"%")),
+            position=position_stack(vjust=0.5)) +
+  ggpubr::theme_pubr() +
+  theme(axis.title.y = element_blank(),
+        #axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x=element_blank(),
+        #axis.text.x = element_text(face = 'bold'),
+        legend.position = 'top',
+        legend.box.background = element_rect(color = "black", linewidth = 0.5),
+        legend.box.margin = margin(t = 1, l = 1, b = 1, r = 1),
+        legend.text=element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = 'DE: amplitude')
+
+DE_amp_percent_graph
+
+shared_legend_sum <- cowplot::get_plot_component(DE_amp_percent_graph, "guide-box", return_all = TRUE)[[4]]
+
+# *8.2 DTU Amplitude----
+
+DTU_amp_summary_day1_vs_day2_150_AMP <- DTU_day1_vs_day2 %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>% 
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'd1d2')
+
+DTU_amp_summary_day1_vs_day5_150_AMP <- DTU_day1_vs_day5 %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'd1d5') 
+
+DTU_amp_summary_table <- bind_rows(DTU_amp_summary_day1_vs_day2_150_AMP, DTU_amp_summary_day1_vs_day5_150_AMP) %>% 
+  dplyr::rename(group = amp_flag_simplified)
+
+DTU_amp_percent_graph <- DTU_amp_summary_table %>% 
+  ggplot(aes(x = condition, y = percent, fill = factor(group, levels = c('gain', 'lose', 'other')))) + 
+  geom_bar(stat = "identity", width = 0.5, alpha = 0.9) +
+  scale_y_continuous(breaks=seq(0,100,100)) +
+  scale_x_discrete(labels=c('Day 1\n vs\n Day 2', 'Day 1\n vs\n Day 5')) +
+  scale_fill_manual(values = c("#31a354", "#de2d26", "#bababa"), name = "", labels = c("amplitude gain", "amplitude loss", "other pattern")) +
+  #scale_fill_manual(values = c("darkolivegreen3", "palevioletred", "grey80"), name = "", labels = c("amplitude gain", "amplitude loss", "other pattern")) +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent),"%")),
+            position=position_stack(vjust=0.5)) +
+  ggpubr::theme_pubr() +
+  theme(axis.title.y = element_blank(),
+        #axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x=element_blank(),
+        #axis.text.x = element_text(face = 'bold'),
+        legend.position = 'top',
+        legend.box.background = element_rect(color = "black", linewidth = 0.75),
+        legend.box.margin = margin(t = 1, l = 1, b = 1, r = 1),
+        legend.text=element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(nrow = 3)) +
+  labs(title = 'DTU: amplitude')
+
+DTU_amp_percent_graph
+
+#*8.3 amp summary----
+
+DTU_amp_d1d2 <- DTU_day1_vs_day2 %>% 
+  select(cluster_id, cluster, amp_flag) %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DTU_d1d2') 
+
+DTU_amp_d1d5 <- DTU_day1_vs_day5 %>% 
+  select(cluster_id, cluster, amp_flag) %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DTU_d1d5')
+
+DE_amp_d1d2 <- DE_day1_vs_day2 %>% 
+  select(cluster_id, cluster, amp_flag) %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DE_d1d2') 
+
+DE_amp_d1d5 <- DE_day1_vs_day5 %>% 
+  select(cluster_id, cluster, amp_flag) %>%
+  mutate(amp_flag_simplified = case_when(grepl("gain", amp_flag) ~ 'gain',
+                                         grepl("lose", amp_flag) ~ 'lose',
+                                         TRUE ~ 'other')) %>% 
+  group_by(amp_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DE_d1d5')
+
+amp_df <- DE_amp_d1d2 %>% 
+  bind_rows(DE_amp_d1d5,
+            DTU_amp_d1d2,
+            DTU_amp_d1d5) %>% 
+  dplyr::rename(group = amp_flag_simplified)
+
+amp_percent_graph <- amp_df %>% 
+  ggplot(aes(x = condition, y = percent, fill = factor(group, levels = c('gain', 'lose', 'other')))) + 
+  geom_bar(stat = "identity", width = 0.5, alpha = 0.9) +
+  scale_y_continuous(breaks=seq(0,100,100)) +
+  scale_x_discrete(labels=c('DE\n Day 1\n vs\n Day 2', 'DE\n Day 1\n vs\n Day 5', 'DTU\n Day 1\n vs\n Day 2', 'DTU\n Day 1\n vs\n Day 5')) +
+  scale_fill_manual(values = c("#31a354", "#de2d26", "#bababa"), name = "Amplitude", labels = c("gain", "lose", "other")) +
+  #scale_fill_manual(values = c("darkolivegreen3", "palevioletred", "grey80"), name = "", labels = c("amplitude gain", "amplitude loss", "other pattern")) +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent),"%")),
+            position=position_stack(vjust=0.5)) +
+  ggpubr::theme_pubr() +
+  theme(axis.title.y = element_blank(),
+        #axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x=element_blank(),
+        #axis.text.x = element_text(face = 'bold'),
+        legend.position = 'top',
+        legend.box.background = element_rect(color = "black", linewidth = 0.75),
+        legend.box.margin = margin(t = 1, l = 1, b = 1, r = 1),
+        legend.text=element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(nrow = 1)) 
+
+amp_percent_graph
+
+#*8.4 DE Rhythm----
+
+DTU_rhy_d1d2 <- DTU_day1_vs_day2 %>%
+  mutate(pval_flag_simplified = case_when(sig_flag %in% 'r-r' ~ 'no change',
+                                          sig_flag %in% 'nr-nr' ~ 'no change',
+                                          TRUE ~ sig_flag)) %>% 
+  group_by(pval_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>% 
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DTU_d1d2')
+
+DTU_rhy_d1d5 <- DTU_day1_vs_day5 %>%
+  mutate(pval_flag_simplified = case_when(sig_flag %in% 'r-r' ~ 'no change',
+                                          sig_flag %in% 'nr-nr' ~ 'no change',
+                                          TRUE ~ sig_flag)) %>%
+  group_by(pval_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DTU_d1d5') 
+
+DE_rhy_d1d2 <- DE_day1_vs_day2 %>%
+  mutate(pval_flag_simplified = case_when(sig_flag %in% 'r-r' ~ 'no change',
+                                          sig_flag %in% 'nr-nr' ~ 'no change',
+                                          TRUE ~ sig_flag)) %>% 
+  group_by(pval_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>% 
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DE_d1d2')
+
+DE_rhy_d1d5 <- DE_day1_vs_day5 %>%
+  mutate(pval_flag_simplified = case_when(sig_flag %in% 'r-r' ~ 'no change',
+                                          sig_flag %in% 'nr-nr' ~ 'no change',
+                                          TRUE ~ sig_flag)) %>%
+  group_by(pval_flag_simplified) %>% 
+  dplyr::summarise(number = n()) %>%
+  ungroup %>% 
+  mutate(percent = prop.table(number) * 100,
+         condition = 'DE_d1d5') 
+
+rhy_df <- DE_rhy_d1d2 %>% 
+  bind_rows(DE_rhy_d1d5,
+            DTU_rhy_d1d2,
+            DTU_rhy_d1d5) %>% 
+  dplyr::rename(group = pval_flag_simplified)
+
+# DE_rhy_summary_table <- bind_rows(DE_rhy_summary_day1_vs_day2_150_AMP, DE_rhy_summary_day1_vs_day5_150_AMP) %>% 
+#   dplyr::rename(group = pval_flag_simplified)
+
+rhy_percent_graph <- rhy_df %>% 
+  ggplot(aes(x = condition, y = percent, fill = factor(group, levels = c('nr-r','r-nr', 'no change')))) + 
+  geom_bar(stat = "identity", width = 0.5, alpha = 0.9) +
+  scale_y_continuous(breaks=seq(0,100,100), position = "right") +
+  scale_x_discrete(labels=c('DE\n Day 1\n vs\n Day 2', 'DE\n Day 1\n vs\n Day 5', 'DTU\n Day 1\n vs\n Day 2', 'DTU\n Day 1\n vs\n Day 5')) +
+  #scale_x_discrete(labels=c('Day 1\n vs\n Day 2', 'Day 1\n vs\n Day 5')) +
+  scale_fill_manual(values = c("#31a354", "#de2d26", "#bababa"), name = "", labels = c("non-rhythmic to rhythmic", "rhythmic to non-rhythmic", "no rhythm change")) +
+  #scale_fill_manual(values = c("darkolivegreen3", "palevioletred", "grey80"), name = "", labels = c("non-rhythmic to rhythmic", "rhythmic to non-rhythmic", "no rhythm change")) +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent),"%")),
+            position=position_stack(vjust=0.5)) +
+  ggpubr::theme_pubr() +
+  theme(axis.title.y = element_blank(),
+        #axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x = element_blank(),
+        #axis.text.x = element_text(face = 'bold'),
+        legend.position = 'top',
+        legend.box.background = element_rect(color = "black", linewidth = 0.75),
+        legend.box.margin = margin(t = 1, l = 1, b = 1, r = 1),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(nrow = 3)) +
+  labs(title = 'DE: rhythm')
+
+rhy_percent_graph
+
+#*8.4 DTU Rhythm----
+
+
+
+
+
+DTU_rhy_summary_table <- bind_rows(DTU_rhy_summary_day1_vs_day2_150_AMP, DTU_rhy_summary_day1_vs_day5_150_AMP) %>% 
+  dplyr::rename(group = pval_flag_simplified)
+
+DTU_rhy_percent_graph <- DTU_rhy_summary_table %>% 
+  ggplot(aes(x = condition, y = percent, fill = factor(group, levels = c('nr-r','r-nr', 'no change')))) + 
+  geom_bar(stat = "identity", width = 0.5, alpha = 0.9) +
+  scale_y_continuous(breaks=seq(0,100,100), position = "right") +
+  scale_x_discrete(labels=c('Day 1\n vs\n Day 2', 'Day 1\n vs\n Day 5')) +
+  scale_fill_manual(values = c("#de2d26", "#bababa"), name = "", labels = c("rhythmic to non-rhythmic", "no rhythm change")) +
+  #scale_fill_manual(values = c("darkolivegreen3", "palevioletred", "grey80"), name = "", labels = c("non-rhythmic to rhythmic", "rhythmic to non-rhythmic", "no rhythm change")) +
+  geom_text(aes(label=paste0(sprintf("%1.1f", percent),"%")),
+            position=position_stack(vjust=0.5)) +
+  ggpubr::theme_pubr() +
+  theme(axis.title.y = element_blank(),
+        #axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold'),
+        axis.title.x = element_blank(),
+        #axis.text.x = element_text(face = 'bold'),
+        legend.position = 'top',
+        legend.box.background = element_rect(color = "black", linewidth = 0.75),
+        legend.box.margin = margin(t = 1, l = 1, b = 1, r = 1),
+        legend.text = element_text(size = 12),
+        plot.title = element_text(hjust = 0.5)) +
+  guides(fill = guide_legend(nrow = 3)) +
+  labs(title = 'DTU: rhythm')
+
+DTU_rhy_percent_graph
+
+# *8.5 panel prep----
+p_panel_summary <- plot_grid(DE_amp_percent_graph + theme(legend.position="none"),
+                             DE_rhy_percent_graph + theme(legend.position="none"),
+                             DTU_amp_percent_graph + theme(legend.position="none"),
+                             DTU_rhy_percent_graph + theme(legend.position="none"),
+                             labels = 'AUTO', ncol = 2,
+                             label_size = 16)
+
+p_panel_summary_legend <- plot_grid(p_panel_summary, shared_legend_sum, ncol = 1, rel_heights = c(1, 0.1)) +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.margin = unit(c(5,5,5,5), 'pt'))
+
+ggsave('./03_plots/p_panel_summary_legend.png', dpi = 300, height = 9, width = 6, units = 'in')
+
+p_panel_scatter_DE <- plot_grid(DE_plot_day1_vs_day2_AMP + theme(legend.position="none"), 
+                                DE_plot_day1_vs_day5_AMP + theme(legend.position="none"),
+                                labels = c('A', 'B'), ncol = 2,
+                                label_size = 16)
+
+p_panel_summary_DE <- plot_grid(DE_amp_percent_graph + theme(legend.position="none"),
+                                DE_rhy_percent_graph + theme(legend.position="none"),
+                                labels = c('C', 'D'), ncol = 2,
+                                label_size = 16)
+
+p_panel_scatter_DTU <- plot_grid(DTU_plot_day1_vs_day2_AMP + theme(legend.position="none"), 
+                                 DTU_plot_day1_vs_day5_AMP + theme(legend.position="none"),
+                                 labels = c('E', 'F'), ncol = 2,
+                                 label_size = 16)
+
+p_panel_summary_DTU <- plot_grid(DTU_amp_percent_graph + theme(legend.position="none"),
+                                 DTU_rhy_percent_graph + theme(legend.position="none"),
+                                 labels = c('G', 'H'), ncol = 2,
+                                 label_size = 16)
+
+p_panel_scat_sum <- plot_grid(shared_legend_scat,
+                              p_panel_scatter_DE, 
+                              p_panel_summary_DE,
+                              p_panel_scatter_DTU,
+                              p_panel_summary_DTU,
+                              shared_legend_sum,
+                              ncol = 1, 
+                              rel_heights = c(0.1, 0.2925, 0.2, 0.2925, 0.2, 0.05)) +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.margin = unit(c(5,5,5,5), 'pt'))
+
+ggsave('./03_plots/p_panel_scatter_summary_legend.png', dpi = 300, height = 16, width = 10, units = 'in')
+
+
+#9 MetaCycle flow diagram----
+
+library(DiagrammeR)
+
+# Creating a simple flowchart using Mermaid
+mermaid("
+graph LR
+    A[Start] --> B(Process)
+    B --> C{Decision}
+    C -->|Yes| D[Result 1]
+    C -->|No| E[Result 2]
+")
+
+# Creating a simple flowchart using Mermaid
+mermaid("
+graph TB
+    A[<center>DE/DTU clusters <br> Calixto <i>et al.</i> 2018</center>] --> B(3 days d1, d2, d5)
+    B --> |3h time points| C{WebPlotDigitizer}
+    C --> |1.5h time-points| D[DE]
+    C --> |1.5h time-points| E[DTU]
+    D --> F{MetaCycle}
+    E --> F
+    F --> G(DE rhythmic signals)
+    F --> H(DTU rhythmic signals)
+    G --> I(<center>cluster classification: <br> d1 vs d2/d1 vs d5 <br> gain/loss of <br> rhythmic signals</center>)
+    H --> I
+    I --> J(enrichment for clock ChIP targets)
+")
+
+# 10 CLUSTER IDs for AMP PROFILES----
+get_clusters <- function(df, filter_col, amp_flag_id){
   
+  clusters <- df %>% 
+    dplyr::filter({{filter_col}} == {{amp_flag_id}}) %>% 
+    dplyr::select(cluster_id) %>% 
+    dplyr::rename(cluster = cluster_id)
   
+  clusters$cluster <- as.character(clusters$cluster)
+  
+  return(clusters)
+}
+
+# *10.1 DE d1d2----
+
+# day1 vs day 2
+DE_amp_gain_high_clusters_d1_d2 <- get_clusters(DE_day1_vs_day2, amp_flag, 'gain_high')
+DE_amp_gain_medium_clusters_d1_d2 <- get_clusters(DE_day1_vs_day2, amp_flag, 'gain_medium')
+DE_amp_lose_high_clusters_d1_d2 <- get_clusters(DE_day1_vs_day2, amp_flag, 'lose_high')
+DE_amp_lose_medium_clusters_d1_d2 <- get_clusters(DE_day1_vs_day2, amp_flag, 'lose_medium')
+DE_amp_other_clusters_d1_d2 <- get_clusters(DE_day1_vs_day2, amp_flag, 'other')
+
+# *10.2 DE d1d5----
+
+# day1 vs day 5
+DE_amp_gain_high_clusters_d1_d5 <- get_clusters(DE_day1_vs_day5, amp_flag, 'gain_high')
+DE_amp_gain_medium_clusters_d1_d5 <- get_clusters(DE_day1_vs_day5, amp_flag, 'gain_medium')
+DE_amp_lose_high_clusters_d1_d5 <- get_clusters(DE_day1_vs_day5, amp_flag, 'lose_high')
+DE_amp_lose_medium_clusters_d1_d5 <- get_clusters(DE_day1_vs_day5, amp_flag, 'lose_medium')
+DE_amp_other_clusters_d1_d5 <- get_clusters(DE_day1_vs_day5, amp_flag, 'other')
+
+# *10.3 DTU d1d2----
+
+# day1 vs day 2
+DTU_amp_gain_high_clusters_d1_d2 <- get_clusters(DTU_day1_vs_day2, amp_flag, 'gain_high')
+DTU_amp_gain_medium_clusters_d1_d2 <- get_clusters(DTU_day1_vs_day2, amp_flag, 'gain_medium')
+DTU_amp_lose_high_clusters_d1_d2 <- get_clusters(DTU_day1_vs_day2, amp_flag, 'lose_high')
+DTU_amp_lose_medium_clusters_d1_d2 <- get_clusters(DTU_day1_vs_day2, amp_flag, 'lose_medium')
+DTU_amp_other_clusters_d1_d2 <- get_clusters(DTU_day1_vs_day2, amp_flag, 'other')
+
+# *10.4 DTU d1d5----
+
+# day1 vs day 5
+DTU_amp_gain_high_clusters_d1_d5 <- get_clusters(DTU_day1_vs_day5, amp_flag, 'gain_high')
+DTU_amp_gain_medium_clusters_d1_d5 <- get_clusters(DTU_day1_vs_day5, amp_flag, 'gain_medium')
+DTU_amp_lose_high_clusters_d1_d5 <- get_clusters(DTU_day1_vs_day5, amp_flag, 'lose_high')
+DTU_amp_lose_medium_clusters_d1_d5 <- get_clusters(DTU_day1_vs_day5, amp_flag, 'lose_medium')
+DTU_amp_other_clusters_d1_d5 <- get_clusters(DTU_day1_vs_day5, amp_flag, 'other')
+
+
+# 11 CLUSTER IDs for MERGED----
+
+clock_clusters <- function(df_clock, df_clusters, label){
+  
+  merge_clock_cluster_types <- df_clock %>% 
+    inner_join(df_clusters, by = 'cluster') %>% 
+    mutate(type = {{label}})
+  
+  return(merge_clock_cluster_types)
+  
+}
+
+# *11.1 DE d1-d2----
+
+glimpse(DE_adams_merge)
+glimpse(DE_amp_gain_high_clusters_d1_d2)
+
+# gain-high d1d2
+DE_LHY_gain_high_d1d2 <- clock_clusters(DE_adams_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_CCA1_nagel_gain_high_d1d2 <- clock_clusters(DE_nagel_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_CCA1_kamioka_gain_high_d1d2 <- clock_clusters(DE_kamioka_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_CCA1_nagel_kamioka_gain_high_d1d2 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_TOC1_gain_high_d1d2 <- clock_clusters(DE_huang_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_PRR5_gain_high_d1d2 <- clock_clusters(DE_nakamichi_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_PRR7_gain_high_d1d2 <- clock_clusters(DE_liu_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_LUX_gain_high_d1d2 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_ELF3_gain_high_d1d2 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DE_ELF4_gain_high_d1d2 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+
+# gain-medium d1d2
+DE_LHY_gain_medium_d1d2 <- clock_clusters(DE_adams_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_CCA1_nagel_gain_medium_d1d2 <- clock_clusters(DE_nagel_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_CCA1_kamioka_gain_medium_d1d2 <- clock_clusters(DE_kamioka_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_CCA1_nagel_kamioka_gain_medium_d1d2 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_TOC1_gain_medium_d1d2 <- clock_clusters(DE_huang_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_PRR5_gain_medium_d1d2 <- clock_clusters(DE_nakamichi_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_PRR7_gain_medium_d1d2 <- clock_clusters(DE_liu_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_LUX_gain_medium_d1d2 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_ELF3_gain_medium_d1d2 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DE_ELF4_gain_medium_d1d2 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+
+# lose-high d1d2
+DE_LHY_lose_high_d1d2 <- clock_clusters(DE_adams_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_CCA1_nagel_lose_high_d1d2 <- clock_clusters(DE_nagel_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_CCA1_kamioka_lose_high_d1d2 <- clock_clusters(DE_kamioka_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_CCA1_nagel_kamioka_lose_high_d1d2 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_TOC1_lose_high_d1d2 <- clock_clusters(DE_huang_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_PRR5_lose_high_d1d2 <- clock_clusters(DE_nakamichi_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_PRR7_lose_high_d1d2 <- clock_clusters(DE_liu_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_LUX_lose_high_d1d2 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_ELF3_lose_high_d1d2 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DE_ELF4_lose_high_d1d2 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+
+# lose-medium d1d2
+DE_LHY_lose_medium_d1d2 <- clock_clusters(DE_adams_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_CCA1_nagel_lose_medium_d1d2 <- clock_clusters(DE_nagel_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_CCA1_kamioka_lose_medium_d1d2 <- clock_clusters(DE_kamioka_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_CCA1_nagel_kamioka_lose_medium_d1d2 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_TOC1_lose_medium_d1d2 <- clock_clusters(DE_huang_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_PRR5_lose_medium_d1d2 <- clock_clusters(DE_nakamichi_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_PRR7_lose_medium_d1d2 <- clock_clusters(DE_liu_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_LUX_lose_medium_d1d2 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_ELF3_lose_medium_d1d2 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DE_ELF4_lose_medium_d1d2 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+
+# other d1d2
+DE_LHY_other_d1d2 <- clock_clusters(DE_adams_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_CCA1_nagel_other_d1d2 <- clock_clusters(DE_nagel_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_CCA1_kamioka_other_d1d2 <- clock_clusters(DE_kamioka_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_CCA1_nagel_kamioka_other_d1d2 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_TOC1_other_d1d2 <- clock_clusters(DE_huang_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_PRR5_other_d1d2 <- clock_clusters(DE_nakamichi_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_PRR7_other_d1d2 <- clock_clusters(DE_liu_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_LUX_other_d1d2 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_ELF3_other_d1d2 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+DE_ELF4_other_d1d2 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_other_clusters_d1_d2, 'other_d1_d2')
+
+# *11.2 DE d1-d5----
+
+# gain-high d1d5
+DE_LHY_gain_high_d1d5 <- clock_clusters(DE_adams_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_CCA1_nagel_gain_high_d1d5 <- clock_clusters(DE_nagel_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_CCA1_kamioka_gain_high_d1d5 <- clock_clusters(DE_kamioka_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_CCA1_nagel_kamioka_gain_high_d1d5 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_TOC1_gain_high_d1d5 <- clock_clusters(DE_huang_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_PRR5_gain_high_d1d5 <- clock_clusters(DE_nakamichi_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_PRR7_gain_high_d1d5 <- clock_clusters(DE_liu_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_LUX_gain_high_d1d5 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_ELF3_gain_high_d1d5 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DE_ELF4_gain_high_d1d5 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+
+# gain-medium d1d5
+DE_LHY_gain_medium_d1d5 <- clock_clusters(DE_adams_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_CCA1_nagel_gain_medium_d1d5 <- clock_clusters(DE_nagel_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_CCA1_kamioka_gain_medium_d1d5 <- clock_clusters(DE_kamioka_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_CCA1_nagel_kamioka_gain_medium_d1d5 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_TOC1_gain_medium_d1d5 <- clock_clusters(DE_huang_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_PRR5_gain_medium_d1d5 <- clock_clusters(DE_nakamichi_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_PRR7_gain_medium_d1d5 <- clock_clusters(DE_liu_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_LUX_gain_medium_d1d5 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_ELF3_gain_medium_d1d5 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DE_ELF4_gain_medium_d1d5 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+
+# lose-high d1d5
+DE_LHY_lose_high_d1d5 <- clock_clusters(DE_adams_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_CCA1_nagel_lose_high_d1d5 <- clock_clusters(DE_nagel_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_CCA1_kamioka_lose_high_d1d5 <- clock_clusters(DE_kamioka_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_CCA1_nagel_kamioka_lose_high_d1d5 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_TOC1_lose_high_d1d5 <- clock_clusters(DE_huang_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_PRR5_lose_high_d1d5 <- clock_clusters(DE_nakamichi_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_PRR7_lose_high_d1d5 <- clock_clusters(DE_liu_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_LUX_lose_high_d1d5 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_ELF3_lose_high_d1d5 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DE_ELF4_lose_high_d1d5 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+
+# lose-medium d1d5
+DE_LHY_lose_medium_d1d5 <- clock_clusters(DE_adams_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_CCA1_nagel_lose_medium_d1d5 <- clock_clusters(DE_nagel_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_CCA1_kamioka_lose_medium_d1d5 <- clock_clusters(DE_kamioka_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_CCA1_nagel_kamioka_lose_medium_d1d5 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_TOC1_lose_medium_d1d5 <- clock_clusters(DE_huang_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_PRR5_lose_medium_d1d5 <- clock_clusters(DE_nakamichi_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_PRR7_lose_medium_d1d5 <- clock_clusters(DE_liu_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_LUX_lose_medium_d1d5 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_ELF3_lose_medium_d1d5 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DE_ELF4_lose_medium_d1d5 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+
+# other d1d5
+DE_LHY_other_d1d5 <- clock_clusters(DE_adams_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_CCA1_nagel_other_d1d5 <- clock_clusters(DE_nagel_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_CCA1_kamioka_other_d1d5 <- clock_clusters(DE_kamioka_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_CCA1_nagel_kamioka_other_d1d5 <- clock_clusters(DE_kamioka_nagel_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_TOC1_other_d1d5 <- clock_clusters(DE_huang_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_PRR5_other_d1d5 <- clock_clusters(DE_nakamichi_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_PRR7_other_d1d5 <- clock_clusters(DE_liu_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_LUX_other_d1d5 <- clock_clusters(DE_ezer_LUX_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_ELF3_other_d1d5 <- clock_clusters(DE_ezer_ELF3_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+DE_ELF4_other_d1d5 <- clock_clusters(DE_ezer_ELF4_merge, DE_amp_other_clusters_d1_d5, 'other_d1_d5')
+
+# *11.3 Bind clock targets----
+# **11.3.1 d1d2----
+# append all the LHY targets:
+# LHY amp_gain_high ( obs) + LHY amp_gain_medium ( obs) + LHY amp_lose_high ( obs) + LHY amp_lose_medium ( obs) + LHY amp_other ( obs): total equals  obs
+DE_LHY_bind_d1d2 <- bind_rows(DE_LHY_gain_high_d1d2, DE_LHY_gain_medium_d1d2, DE_LHY_lose_high_d1d2, DE_LHY_lose_medium_d1d2, DE_LHY_other_d1d2)
+
+names(DE_LHY_bind_d1d2)[3] <- "LHY"
+
+# write_csv(DE_LHY_bind_d1d2, './01_tidy_data/DE_LHY_targets_d1d2.csv')
+
+# CCA1-Nagel amp_gain_high ( obs) + CCA1-Nagel amp_gain_medium ( obs) + CCA1-Nagel amp_lose_high ( obs) + CCA1-Nagel amp_lose_medium ( obs) + CCA1-Nagel amp_other ( obs): total equals  obs
+DE_CCA1_nagel_bind_d1d2 <- bind_rows(DE_CCA1_nagel_gain_high_d1d2, DE_CCA1_nagel_gain_medium_d1d2, DE_CCA1_nagel_lose_high_d1d2, DE_CCA1_nagel_lose_medium_d1d2, DE_CCA1_nagel_other_d1d2)
+
+names(DE_CCA1_nagel_bind_d1d2)[3] <- "CCA1 Nagel"
+
+# write_csv(DE_CCA1_nagel_bind_d1d2, './01_tidy_data/DE_CCA1_nagel_bind_d1d2.csv')
+
+# CCA1-Kamioka amp_gain_high ( obs) + CCA1-Kamioka amp_gain_medium ( obs) + CCA1-Kamioka amp_lose_high ( obs) + CCA1-Kamioka amp_lose_medium ( obs) + CCA1-Kamioka amp_other ( obs): total equals  obs
+DE_CCA1_kamioka_bind_d1d2 <- bind_rows(DE_CCA1_kamioka_gain_high_d1d2, DE_CCA1_kamioka_gain_medium_d1d2, DE_CCA1_kamioka_lose_high_d1d2, DE_CCA1_kamioka_lose_medium_d1d2, DE_CCA1_kamioka_other_d1d2)
+
+names(DE_CCA1_kamioka_bind_d1d2)[3] <- "CCA1 Kamioka"
+
+# write_csv(DE_CCA1_kamioka_bind_d1d2, './01_tidy_data/DE_CCA1_kamioka_bind_d1d2.csv')
+
+# CCA1-Nagel-Kamioka amp_gain_high ( obs) + CCA1-Nagel-Kamioka amp_gain_medium ( obs) + CCA1-Nagel-Kamioka amp_lose_high ( obs) + CCA1-Nagel-Kamioka amp_lose_medium ( obs) + CCA1-Nagel-Kamioka amp_other ( obs): total equals  obs
+DE_CCA1_nagel_kamioka_bind_d1d2 <- bind_rows(DE_CCA1_nagel_kamioka_gain_high_d1d2, DE_CCA1_nagel_kamioka_gain_medium_d1d2, DE_CCA1_nagel_kamioka_lose_high_d1d2, DE_CCA1_nagel_kamioka_lose_medium_d1d2, DE_CCA1_nagel_kamioka_other_d1d2)
+
+names(DE_CCA1_nagel_kamioka_bind_d1d2)[3] <- "CCA1 Nagel-Kamioka"
+
+# write_csv(DE_CCA1_nagel_kamioka_bind_d1d2, './01_tidy_data/DE_CCA1_nagel_kamioka_bind_d1d2.csv')
+
+# TOC1 amp_gain_high ( obs) + TOC1 amp_gain_medium ( obs) + TOC1 amp_lose_high ( obs) + TOC1 amp_lose_medium ( obs) + TOC1 amp_other ( obs): total equals  obs
+DE_TOC1_bind_d1d2 <- bind_rows(DE_TOC1_gain_high_d1d2, DE_TOC1_gain_medium_d1d2, DE_TOC1_lose_high_d1d2, DE_TOC1_lose_medium_d1d2, DE_TOC1_other_d1d2)
+
+names(DE_TOC1_bind_d1d2)[3] <- "TOC1"
+
+# write_csv(DE_TOC1_bind_d1d2, './01_tidy_data/DE_TOC1_bind_d1d2.csv')
+
+# PRR5 amp_gain_high ( obs) + PRR5 amp_gain_medium ( obs) + PRR5 amp_lose_high ( obs) + PRR5 amp_lose_medium ( obs) + PRR5 amp_other ( obs): total equals  obs
+DE_PRR5_bind_d1d2 <- bind_rows(DE_PRR5_gain_high_d1d2, DE_PRR5_gain_medium_d1d2, DE_PRR5_lose_high_d1d2, DE_PRR5_lose_medium_d1d2, DE_PRR5_other_d1d2)
+
+names(DE_PRR5_bind_d1d2)[3] <- "PRR5"
+
+# write_csv(DE_PRR5_bind_d1d2, './01_tidy_data/DE_PRR5_bind_d1d2.csv')
+
+# PRR7 amp_gain_high ( obs) + PRR7 amp_gain_medium ( obs) + PRR7 amp_lose_high ( obs) + PRR7 amp_lose_medium ( obs) + PRR7 amp_other ( obs): total equals  obs
+DE_PRR7_bind_d1d2 <- bind_rows(DE_PRR7_gain_high_d1d2, DE_PRR7_gain_medium_d1d2, DE_PRR7_lose_high_d1d2, DE_PRR7_lose_medium_d1d2, DE_PRR7_other_d1d2)
+
+names(DE_PRR7_bind_d1d2)[3] <- "PRR7"
+
+# write_csv(DE_PRR7_bind_d1d2, './01_tidy_data/DE_PRR7_bind_d1d2.csv')
+
+# LUX amp_gain_high ( obs) + LUX amp_gain_medium ( obs) + LUX amp_lose_high ( obs) + LUX amp_lose_medium ( obs) + LUX amp_other ( obs): total equals  obs
+DE_LUX_bind_d1d2 <- bind_rows(DE_LUX_gain_high_d1d2, DE_LUX_gain_medium_d1d2, DE_LUX_lose_high_d1d2, DE_LUX_lose_medium_d1d2, DE_LUX_other_d1d2)
+
+names(DE_LUX_bind_d1d2)[3] <- "LUX"
+
+# write_csv(DE_LUX_bind_d1d2, './01_tidy_data/DE_LUX_bind_d1d2.csv')
+
+# ELF3 amp_gain_high ( obs) + ELF3 amp_gain_medium ( obs) + ELF3 amp_lose_high ( obs) + ELF3 amp_lose_medium ( obs) + ELF3 amp_other ( obs): total equals  obs
+DE_ELF3_bind_d1d2 <- bind_rows(DE_ELF3_gain_high_d1d2, DE_ELF3_gain_medium_d1d2, DE_ELF3_lose_high_d1d2, DE_ELF3_lose_medium_d1d2, DE_ELF3_other_d1d2)
+
+names(DE_ELF3_bind_d1d2)[3] <- "ELF3"
+
+# write_csv(DE_ELF3_bind_d1d2, './01_tidy_data/DE_ELF3_bind_d1d2.csv')
+
+# ELF4 amp_gain_high ( obs) + ELF4 amp_gain_medium ( obs) + ELF4 amp_lose_high ( obs) + ELF4 amp_lose_medium ( obs) + ELF4 amp_other ( obs): total equals  obs
+DE_ELF4_bind_d1d2 <- bind_rows(DE_ELF4_gain_high_d1d2, DE_ELF4_gain_medium_d1d2, DE_ELF4_lose_high_d1d2, DE_ELF4_lose_medium_d1d2, DE_ELF4_other_d1d2)
+
+names(DE_ELF4_bind_d1d2)[3] <- "ELF4"
+
+# write_csv(DE_ELF4_bind_d1d2, './01_tidy_data/DE_ELF4_bind_d1d2.csv')
+
+# **11.3.2 d1d5----
+
+# append all the LHY targets:
+# LHY amp_gain_high ( obs) + LHY amp_gain_medium ( obs) + LHY amp_lose_high ( obs) + LHY amp_lose_medium ( obs) + LHY amp_other ( obs): total equals  obs
+DE_LHY_bind_d1d5 <- bind_rows(DE_LHY_gain_high_d1d5, DE_LHY_gain_medium_d1d5, DE_LHY_lose_high_d1d5, DE_LHY_lose_medium_d1d5, DE_LHY_other_d1d5)
+
+names(DE_LHY_bind_d1d5)[3] <- "LHY"
+
+# write_csv(DE_LHY_bind_d1d5, './01_tidy_data/DE_LHY_bind_d1d5.csv')
+
+# CCA1-Nagel amp_gain_high ( obs) + CCA1-Nagel amp_gain_medium ( obs) + CCA1-Nagel amp_lose_high ( obs) + CCA1-Nagel amp_lose_medium ( obs) + CCA1-Nagel amp_other ( obs): total equals  obs
+DE_CCA1_nagel_bind_d1d5 <- bind_rows(DE_CCA1_nagel_gain_high_d1d5, DE_CCA1_nagel_gain_medium_d1d5, DE_CCA1_nagel_lose_high_d1d5, DE_CCA1_nagel_lose_medium_d1d5, DE_CCA1_nagel_other_d1d5)
+
+names(DE_CCA1_nagel_bind_d1d5)[3] <- "CCA1 Nagel"
+
+# write_csv(DE_CCA1_nagel_bind_d1d5, './01_tidy_data/DE_CCA1_nagel_bind_d1d5.csv')
+
+# CCA1-Kamioka amp_gain_high ( obs) + CCA1-Kamioka amp_gain_medium ( obs) + CCA1-Kamioka amp_lose_high ( obs) + CCA1-Kamioka amp_lose_medium ( obs) + CCA1-Kamioka amp_other ( obs): total equals  obs
+DE_CCA1_kamioka_bind_d1d5 <- bind_rows(DE_CCA1_kamioka_gain_high_d1d5, DE_CCA1_kamioka_gain_medium_d1d5, DE_CCA1_kamioka_lose_high_d1d5, DE_CCA1_kamioka_lose_medium_d1d5, DE_CCA1_kamioka_other_d1d5)
+
+names(DE_CCA1_kamioka_bind_d1d5)[3] <- "CCA1 Kamioka"
+
+# write_csv(DE_CCA1_kamioka_bind_d1d5, './01_tidy_data/DE_CCA1_kamioka_bind_d1d5.csv')
+
+# CCA1-Nagel-Kamioka amp_gain_high ( obs) + CCA1-Nagel-Kamioka amp_gain_medium ( obs) + CCA1-Nagel-Kamioka amp_lose_high ( obs) + CCA1-Nagel-Kamioka amp_lose_medium ( obs) + CCA1-Nagel-Kamioka amp_other ( obs): total equals  obs
+DE_CCA1_nagel_kamioka_bind_d1d5 <- bind_rows(DE_CCA1_nagel_kamioka_gain_high_d1d5, DE_CCA1_nagel_kamioka_gain_medium_d1d5, DE_CCA1_nagel_kamioka_lose_high_d1d5, DE_CCA1_nagel_kamioka_lose_medium_d1d5, DE_CCA1_nagel_kamioka_other_d1d5)
+
+names(DE_CCA1_nagel_kamioka_bind_d1d5)[3] <- "CCA1 Nagel-Kamioka"
+
+# write_csv(DE_CCA1_nagel_kamioka_bind_d1d5, './01_tidy_data/DE_CCA1_nagel_kamioka_bind_d1d5.csv')
+
+# TOC1 amp_gain_high ( obs) + TOC1 amp_gain_medium ( obs) + TOC1 amp_lose_high ( obs) + TOC1 amp_lose_medium ( obs) + TOC1 amp_other ( obs): total equals  obs
+DE_TOC1_bind_d1d5 <- bind_rows(DE_TOC1_gain_high_d1d5, DE_TOC1_gain_medium_d1d5, DE_TOC1_lose_high_d1d5, DE_TOC1_lose_medium_d1d5, DE_TOC1_other_d1d5)
+
+names(DE_TOC1_bind_d1d5)[3] <- "TOC1"
+
+# write_csv(DE_TOC1_bind_d1d5, './01_tidy_data/DE_TOC1_bind_d1d5.csv')
+
+# PRR5 amp_gain_high ( obs) + PRR5 amp_gain_medium ( obs) + PRR5 amp_lose_high ( obs) + PRR5 amp_lose_medium ( obs) + PRR5 amp_other ( obs): total equals  obs
+DE_PRR5_bind_d1d5 <- bind_rows(DE_PRR5_gain_high_d1d5, DE_PRR5_gain_medium_d1d5, DE_PRR5_lose_high_d1d5, DE_PRR5_lose_medium_d1d5, DE_PRR5_other_d1d5)
+
+names(DE_PRR5_bind_d1d5)[3] <- "PRR5"
+
+# write_csv(DE_PRR5_bind_d1d5, './01_tidy_data/DE_PRR5_bind_d1d5.csv')
+
+# PRR7 amp_gain_high ( obs) + PRR7 amp_gain_medium ( obs) + PRR7 amp_lose_high ( obs) + PRR7 amp_lose_medium ( obs) + PRR7 amp_other ( obs): total equals  obs
+DE_PRR7_bind_d1d5 <- bind_rows(DE_PRR7_gain_high_d1d5, DE_PRR7_gain_medium_d1d5, DE_PRR7_lose_high_d1d5, DE_PRR7_lose_medium_d1d5, DE_PRR7_other_d1d5)
+
+names(DE_PRR7_bind_d1d5)[3] <- "PRR7"
+
+# write_csv(DE_PRR7_bind_d1d5, './01_tidy_data/DE_PRR7_bind_d1d5.csv')
+
+# LUX amp_gain_high ( obs) + LUX amp_gain_medium ( obs) + LUX amp_lose_high ( obs) + LUX amp_lose_medium ( obs) + LUX amp_other ( obs): total equals  obs
+DE_LUX_bind_d1d5 <- bind_rows(DE_LUX_gain_high_d1d5, DE_LUX_gain_medium_d1d5, DE_LUX_lose_high_d1d5, DE_LUX_lose_medium_d1d5, DE_LUX_other_d1d5)
+
+names(DE_LUX_bind_d1d5)[3] <- "LUX"
+
+# write_csv(DE_LUX_bind_d1d5, './01_tidy_data/DE_LUX_bind_d1d5.csv')
+
+# ELF3 amp_gain_high ( obs) + ELF3 amp_gain_medium ( obs) + ELF3 amp_lose_high ( obs) + ELF3 amp_lose_medium ( obs) + ELF3 amp_other ( obs): total equals  obs
+DE_ELF3_bind_d1d5 <- bind_rows(DE_ELF3_gain_high_d1d5, DE_ELF3_gain_medium_d1d5, DE_ELF3_lose_high_d1d5, DE_ELF3_lose_medium_d1d5, DE_ELF3_other_d1d5)
+
+names(DE_ELF3_bind_d1d5)[3] <- "ELF3"
+
+# write_csv(DE_ELF3_bind_d1d5, './01_tidy_data/DE_ELF3_bind_d1d5.csv')
+
+# ELF4 amp_gain_high ( obs) + ELF4 amp_gain_medium ( obs) + ELF4 amp_lose_high ( obs) + ELF4 amp_lose_medium ( obs) + ELF4 amp_other ( obs): total equals  obs
+DE_ELF4_bind_d1d5 <- bind_rows(DE_ELF4_gain_high_d1d5, DE_ELF4_gain_medium_d1d5, DE_ELF4_lose_high_d1d5, DE_ELF4_lose_medium_d1d5, DE_ELF4_other_d1d5)
+
+names(DE_ELF4_bind_d1d5)[3] <- "ELF4"
+
+# write_csv(DE_ELF4_bind_d1d5, './01_tidy_data/DE_ELF4_bind_d1d5.csv')
+
+# *11.4 DTU d1-d2----
+
+glimpse(DTU_adams_merge)
+glimpse(DTU_amp_gain_high_clusters_d1_d2)
+
+# gain-high d1d2
+DTU_LHY_gain_high_d1d2 <- clock_clusters(DTU_adams_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_CCA1_nagel_gain_high_d1d2 <- clock_clusters(DTU_nagel_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_CCA1_kamioka_gain_high_d1d2 <- clock_clusters(DTU_kamioka_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_CCA1_nagel_kamioka_gain_high_d1d2 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_TOC1_gain_high_d1d2 <- clock_clusters(DTU_huang_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_PRR5_gain_high_d1d2 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_PRR7_gain_high_d1d2 <- clock_clusters(DTU_liu_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_LUX_gain_high_d1d2 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_ELF3_gain_high_d1d2 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+DTU_ELF4_gain_high_d1d2 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_gain_high_clusters_d1_d2, 'gain_high_d1_d2')
+
+# gain-medium d1d2
+DTU_LHY_gain_medium_d1d2 <- clock_clusters(DTU_adams_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_CCA1_nagel_gain_medium_d1d2 <- clock_clusters(DTU_nagel_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_CCA1_kamioka_gain_medium_d1d2 <- clock_clusters(DTU_kamioka_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_CCA1_nagel_kamioka_gain_medium_d1d2 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_TOC1_gain_medium_d1d2 <- clock_clusters(DTU_huang_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_PRR5_gain_medium_d1d2 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_PRR7_gain_medium_d1d2 <- clock_clusters(DTU_liu_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_LUX_gain_medium_d1d2 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_ELF3_gain_medium_d1d2 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+DTU_ELF4_gain_medium_d1d2 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_gain_medium_clusters_d1_d2, 'gain_medium_d1_d2')
+
+# lose-high d1d2
+DTU_LHY_lose_high_d1d2 <- clock_clusters(DTU_adams_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_CCA1_nagel_lose_high_d1d2 <- clock_clusters(DTU_nagel_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_CCA1_kamioka_lose_high_d1d2 <- clock_clusters(DTU_kamioka_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_CCA1_nagel_kamioka_lose_high_d1d2 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_TOC1_lose_high_d1d2 <- clock_clusters(DTU_huang_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_PRR5_lose_high_d1d2 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_PRR7_lose_high_d1d2 <- clock_clusters(DTU_liu_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_LUX_lose_high_d1d2 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_ELF3_lose_high_d1d2 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+DTU_ELF4_lose_high_d1d2 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_lose_high_clusters_d1_d2, 'lose_high_d1_d2')
+
+# lose-medium d1d2
+DTU_LHY_lose_medium_d1d2 <- clock_clusters(DTU_adams_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_CCA1_nagel_lose_medium_d1d2 <- clock_clusters(DTU_nagel_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_CCA1_kamioka_lose_medium_d1d2 <- clock_clusters(DTU_kamioka_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_CCA1_nagel_kamioka_lose_medium_d1d2 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_TOC1_lose_medium_d1d2 <- clock_clusters(DTU_huang_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_PRR5_lose_medium_d1d2 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_PRR7_lose_medium_d1d2 <- clock_clusters(DTU_liu_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_LUX_lose_medium_d1d2 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_ELF3_lose_medium_d1d2 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+DTU_ELF4_lose_medium_d1d2 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_lose_medium_clusters_d1_d2, 'lose_medium_d1_d2')
+
+# other d1d2
+DTU_LHY_other_d1d2 <- clock_clusters(DTU_adams_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_CCA1_nagel_other_d1d2 <- clock_clusters(DTU_nagel_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_CCA1_kamioka_other_d1d2 <- clock_clusters(DTU_kamioka_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_CCA1_nagel_kamioka_other_d1d2 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_TOC1_other_d1d2 <- clock_clusters(DTU_huang_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_PRR5_other_d1d2 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_PRR7_other_d1d2 <- clock_clusters(DTU_liu_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_LUX_other_d1d2 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_ELF3_other_d1d2 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+DTU_ELF4_other_d1d2 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_other_clusters_d1_d2, 'other_d1_d2')
+
+# *11.5 DTU d1-d5----
+
+# gain-high d1d5
+DTU_LHY_gain_high_d1d5 <- clock_clusters(DTU_adams_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_CCA1_nagel_gain_high_d1d5 <- clock_clusters(DTU_nagel_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_CCA1_kamioka_gain_high_d1d5 <- clock_clusters(DTU_kamioka_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_CCA1_nagel_kamioka_gain_high_d1d5 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_TOC1_gain_high_d1d5 <- clock_clusters(DTU_huang_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_PRR5_gain_high_d1d5 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_PRR7_gain_high_d1d5 <- clock_clusters(DTU_liu_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_LUX_gain_high_d1d5 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_ELF3_gain_high_d1d5 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+DTU_ELF4_gain_high_d1d5 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_gain_high_clusters_d1_d5, 'gain_high_d1_d5')
+
+# gain-medium d1d5
+DTU_LHY_gain_medium_d1d5 <- clock_clusters(DTU_adams_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_CCA1_nagel_gain_medium_d1d5 <- clock_clusters(DTU_nagel_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_CCA1_kamioka_gain_medium_d1d5 <- clock_clusters(DTU_kamioka_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_CCA1_nagel_kamioka_gain_medium_d1d5 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_TOC1_gain_medium_d1d5 <- clock_clusters(DTU_huang_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_PRR5_gain_medium_d1d5 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_PRR7_gain_medium_d1d5 <- clock_clusters(DTU_liu_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_LUX_gain_medium_d1d5 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_ELF3_gain_medium_d1d5 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+DTU_ELF4_gain_medium_d1d5 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_gain_medium_clusters_d1_d5, 'gain_medium_d1_d5')
+
+# lose-high d1d5
+DTU_LHY_lose_high_d1d5 <- clock_clusters(DTU_adams_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_CCA1_nagel_lose_high_d1d5 <- clock_clusters(DTU_nagel_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_CCA1_kamioka_lose_high_d1d5 <- clock_clusters(DTU_kamioka_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_CCA1_nagel_kamioka_lose_high_d1d5 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_TOC1_lose_high_d1d5 <- clock_clusters(DTU_huang_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_PRR5_lose_high_d1d5 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_PRR7_lose_high_d1d5 <- clock_clusters(DTU_liu_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_LUX_lose_high_d1d5 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_ELF3_lose_high_d1d5 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+DTU_ELF4_lose_high_d1d5 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_lose_high_clusters_d1_d5, 'lose_high_d1_d5')
+
+# lose-medium d1d5
+DTU_LHY_lose_medium_d1d5 <- clock_clusters(DTU_adams_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_CCA1_nagel_lose_medium_d1d5 <- clock_clusters(DTU_nagel_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_CCA1_kamioka_lose_medium_d1d5 <- clock_clusters(DTU_kamioka_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_CCA1_nagel_kamioka_lose_medium_d1d5 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_TOC1_lose_medium_d1d5 <- clock_clusters(DTU_huang_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_PRR5_lose_medium_d1d5 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_PRR7_lose_medium_d1d5 <- clock_clusters(DTU_liu_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_LUX_lose_medium_d1d5 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_ELF3_lose_medium_d1d5 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+DTU_ELF4_lose_medium_d1d5 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_lose_medium_clusters_d1_d5, 'lose_medium_d1_d5')
+
+# other d1d5
+DTU_LHY_other_d1d5 <- clock_clusters(DTU_adams_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_CCA1_nagel_other_d1d5 <- clock_clusters(DTU_nagel_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_CCA1_kamioka_other_d1d5 <- clock_clusters(DTU_kamioka_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_CCA1_nagel_kamioka_other_d1d5 <- clock_clusters(DTU_kamioka_nagel_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_TOC1_other_d1d5 <- clock_clusters(DTU_huang_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_PRR5_other_d1d5 <- clock_clusters(DTU_nakamichi_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_PRR7_other_d1d5 <- clock_clusters(DTU_liu_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_LUX_other_d1d5 <- clock_clusters(DTU_ezer_LUX_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_ELF3_other_d1d5 <- clock_clusters(DTU_ezer_ELF3_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+DTU_ELF4_other_d1d5 <- clock_clusters(DTU_ezer_ELF4_merge, DTU_amp_other_clusters_d1_d5, 'other_d1_d5')
+
+# *11.6 Bind clock targets----
+# **11.6.1 d1d2----
+# append all the LHY targets:
+# LHY amp_gain_high ( obs) + LHY amp_gain_medium ( obs) + LHY amp_lose_high ( obs) + LHY amp_lose_medium ( obs) + LHY amp_other ( obs): total equals  obs
+DTU_LHY_bind_d1d2 <- bind_rows(DTU_LHY_gain_high_d1d2, DTU_LHY_gain_medium_d1d2, DTU_LHY_lose_high_d1d2, DTU_LHY_lose_medium_d1d2, DTU_LHY_other_d1d2)
+
+names(DTU_LHY_bind_d1d2)[3] <- "LHY"
+
+# write_csv(DTU_LHY_bind_d1d2, './01_tidy_data/DTU_LHY_targets_d1d2.csv')
+
+# CCA1-Nagel amp_gain_high ( obs) + CCA1-Nagel amp_gain_medium ( obs) + CCA1-Nagel amp_lose_high ( obs) + CCA1-Nagel amp_lose_medium ( obs) + CCA1-Nagel amp_other ( obs): total equals  obs
+DTU_CCA1_nagel_bind_d1d2 <- bind_rows(DTU_CCA1_nagel_gain_high_d1d2, DTU_CCA1_nagel_gain_medium_d1d2, DTU_CCA1_nagel_lose_high_d1d2, DTU_CCA1_nagel_lose_medium_d1d2, DTU_CCA1_nagel_other_d1d2)
+
+names(DTU_CCA1_nagel_bind_d1d2)[3] <- "CCA1 Nagel"
+
+# write_csv(DTU_CCA1_nagel_bind_d1d2, './01_tidy_data/DTU_CCA1_nagel_bind_d1d2.csv')
+
+# CCA1-Kamioka amp_gain_high ( obs) + CCA1-Kamioka amp_gain_medium ( obs) + CCA1-Kamioka amp_lose_high ( obs) + CCA1-Kamioka amp_lose_medium ( obs) + CCA1-Kamioka amp_other ( obs): total equals  obs
+DTU_CCA1_kamioka_bind_d1d2 <- bind_rows(DTU_CCA1_kamioka_gain_high_d1d2, DTU_CCA1_kamioka_gain_medium_d1d2, DTU_CCA1_kamioka_lose_high_d1d2, DTU_CCA1_kamioka_lose_medium_d1d2, DTU_CCA1_kamioka_other_d1d2)
+
+names(DTU_CCA1_kamioka_bind_d1d2)[3] <- "CCA1 Kamioka"
+
+# write_csv(DTU_CCA1_kamioka_bind_d1d2, './01_tidy_data/DTU_CCA1_kamioka_bind_d1d2.csv')
+
+# CCA1-Nagel-Kamioka amp_gain_high ( obs) + CCA1-Nagel-Kamioka amp_gain_medium ( obs) + CCA1-Nagel-Kamioka amp_lose_high ( obs) + CCA1-Nagel-Kamioka amp_lose_medium ( obs) + CCA1-Nagel-Kamioka amp_other ( obs): total equals  obs
+DTU_CCA1_nagel_kamioka_bind_d1d2 <- bind_rows(DTU_CCA1_nagel_kamioka_gain_high_d1d2, DTU_CCA1_nagel_kamioka_gain_medium_d1d2, DTU_CCA1_nagel_kamioka_lose_high_d1d2, DTU_CCA1_nagel_kamioka_lose_medium_d1d2, DTU_CCA1_nagel_kamioka_other_d1d2)
+
+names(DTU_CCA1_nagel_kamioka_bind_d1d2)[3] <- "CCA1 Nagel-Kamioka"
+
+# write_csv(DTU_CCA1_nagel_kamioka_bind_d1d2, './01_tidy_data/DTU_CCA1_nagel_kamioka_bind_d1d2.csv')
+
+# TOC1 amp_gain_high ( obs) + TOC1 amp_gain_medium ( obs) + TOC1 amp_lose_high ( obs) + TOC1 amp_lose_medium ( obs) + TOC1 amp_other ( obs): total equals  obs
+DTU_TOC1_bind_d1d2 <- bind_rows(DTU_TOC1_gain_high_d1d2, DTU_TOC1_gain_medium_d1d2, DTU_TOC1_lose_high_d1d2, DTU_TOC1_lose_medium_d1d2, DTU_TOC1_other_d1d2)
+
+names(DTU_TOC1_bind_d1d2)[3] <- "TOC1"
+
+# write_csv(DTU_TOC1_bind_d1d2, './01_tidy_data/DTU_TOC1_bind_d1d2.csv')
+
+# PRR5 amp_gain_high ( obs) + PRR5 amp_gain_medium ( obs) + PRR5 amp_lose_high ( obs) + PRR5 amp_lose_medium ( obs) + PRR5 amp_other ( obs): total equals  obs
+DTU_PRR5_bind_d1d2 <- bind_rows(DTU_PRR5_gain_high_d1d2, DTU_PRR5_gain_medium_d1d2, DTU_PRR5_lose_high_d1d2, DTU_PRR5_lose_medium_d1d2, DTU_PRR5_other_d1d2)
+
+names(DTU_PRR5_bind_d1d2)[3] <- "PRR5"
+
+# write_csv(DTU_PRR5_bind_d1d2, './01_tidy_data/DTU_PRR5_bind_d1d2.csv')
+
+# PRR7 amp_gain_high ( obs) + PRR7 amp_gain_medium ( obs) + PRR7 amp_lose_high ( obs) + PRR7 amp_lose_medium ( obs) + PRR7 amp_other ( obs): total equals  obs
+DTU_PRR7_bind_d1d2 <- bind_rows(DTU_PRR7_gain_high_d1d2, DTU_PRR7_gain_medium_d1d2, DTU_PRR7_lose_high_d1d2, DTU_PRR7_lose_medium_d1d2, DTU_PRR7_other_d1d2)
+
+names(DTU_PRR7_bind_d1d2)[3] <- "PRR7"
+
+# write_csv(DTU_PRR7_bind_d1d2, './01_tidy_data/DTU_PRR7_bind_d1d2.csv')
+
+# LUX amp_gain_high ( obs) + LUX amp_gain_medium ( obs) + LUX amp_lose_high ( obs) + LUX amp_lose_medium ( obs) + LUX amp_other ( obs): total equals  obs
+DTU_LUX_bind_d1d2 <- bind_rows(DTU_LUX_gain_high_d1d2, DTU_LUX_gain_medium_d1d2, DTU_LUX_lose_high_d1d2, DTU_LUX_lose_medium_d1d2, DTU_LUX_other_d1d2)
+
+names(DTU_LUX_bind_d1d2)[3] <- "LUX"
+
+# write_csv(DTU_LUX_bind_d1d2, './01_tidy_data/DTU_LUX_bind_d1d2.csv')
+
+# ELF3 amp_gain_high ( obs) + ELF3 amp_gain_medium ( obs) + ELF3 amp_lose_high ( obs) + ELF3 amp_lose_medium ( obs) + ELF3 amp_other ( obs): total equals  obs
+DTU_ELF3_bind_d1d2 <- bind_rows(DTU_ELF3_gain_high_d1d2, DTU_ELF3_gain_medium_d1d2, DTU_ELF3_lose_high_d1d2, DTU_ELF3_lose_medium_d1d2, DTU_ELF3_other_d1d2)
+
+names(DTU_ELF3_bind_d1d2)[3] <- "ELF3"
+
+# write_csv(DTU_ELF3_bind_d1d2, './01_tidy_data/DTU_ELF3_bind_d1d2.csv')
+
+# ELF4 amp_gain_high ( obs) + ELF4 amp_gain_medium ( obs) + ELF4 amp_lose_high ( obs) + ELF4 amp_lose_medium ( obs) + ELF4 amp_other ( obs): total equals  obs
+DTU_ELF4_bind_d1d2 <- bind_rows(DTU_ELF4_gain_high_d1d2, DTU_ELF4_gain_medium_d1d2, DTU_ELF4_lose_high_d1d2, DTU_ELF4_lose_medium_d1d2, DTU_ELF4_other_d1d2)
+
+names(DTU_ELF4_bind_d1d2)[3] <- "ELF4"
+
+# write_csv(DTU_ELF4_bind_d1d2, './01_tidy_data/DTU_ELF4_bind_d1d2.csv')
+
+# **11.6.2 d1d5----
+
+# append all the LHY targets:
+# LHY amp_gain_high ( obs) + LHY amp_gain_medium ( obs) + LHY amp_lose_high ( obs) + LHY amp_lose_medium ( obs) + LHY amp_other ( obs): total equals  obs
+DTU_LHY_bind_d1d5 <- bind_rows(DTU_LHY_gain_high_d1d5, DTU_LHY_gain_medium_d1d5, DTU_LHY_lose_high_d1d5, DTU_LHY_lose_medium_d1d5, DTU_LHY_other_d1d5)
+
+names(DTU_LHY_bind_d1d5)[3] <- "LHY"
+
+# write_csv(DTU_LHY_bind_d1d5, './01_tidy_data/DTU_LHY_bind_d1d5.csv')
+
+# CCA1-Nagel amp_gain_high ( obs) + CCA1-Nagel amp_gain_medium ( obs) + CCA1-Nagel amp_lose_high ( obs) + CCA1-Nagel amp_lose_medium ( obs) + CCA1-Nagel amp_other ( obs): total equals  obs
+DTU_CCA1_nagel_bind_d1d5 <- bind_rows(DTU_CCA1_nagel_gain_high_d1d5, DTU_CCA1_nagel_gain_medium_d1d5, DTU_CCA1_nagel_lose_high_d1d5, DTU_CCA1_nagel_lose_medium_d1d5, DTU_CCA1_nagel_other_d1d5)
+
+names(DTU_CCA1_nagel_bind_d1d5)[3] <- "CCA1 Nagel"
+
+# write_csv(DTU_CCA1_nagel_bind_d1d5, './01_tidy_data/DTU_CCA1_nagel_bind_d1d5.csv')
+
+# CCA1-Kamioka amp_gain_high ( obs) + CCA1-Kamioka amp_gain_medium ( obs) + CCA1-Kamioka amp_lose_high ( obs) + CCA1-Kamioka amp_lose_medium ( obs) + CCA1-Kamioka amp_other ( obs): total equals  obs
+DTU_CCA1_kamioka_bind_d1d5 <- bind_rows(DTU_CCA1_kamioka_gain_high_d1d5, DTU_CCA1_kamioka_gain_medium_d1d5, DTU_CCA1_kamioka_lose_high_d1d5, DTU_CCA1_kamioka_lose_medium_d1d5, DTU_CCA1_kamioka_other_d1d5)
+
+names(DTU_CCA1_kamioka_bind_d1d5)[3] <- "CCA1 Kamioka"
+
+# write_csv(DTU_CCA1_kamioka_bind_d1d5, './01_tidy_data/DTU_CCA1_kamioka_bind_d1d5.csv')
+
+# CCA1-Nagel-Kamioka amp_gain_high ( obs) + CCA1-Nagel-Kamioka amp_gain_medium ( obs) + CCA1-Nagel-Kamioka amp_lose_high ( obs) + CCA1-Nagel-Kamioka amp_lose_medium ( obs) + CCA1-Nagel-Kamioka amp_other ( obs): total equals  obs
+DTU_CCA1_nagel_kamioka_bind_d1d5 <- bind_rows(DTU_CCA1_nagel_kamioka_gain_high_d1d5, DTU_CCA1_nagel_kamioka_gain_medium_d1d5, DTU_CCA1_nagel_kamioka_lose_high_d1d5, DTU_CCA1_nagel_kamioka_lose_medium_d1d5, DTU_CCA1_nagel_kamioka_other_d1d5)
+
+names(DTU_CCA1_nagel_kamioka_bind_d1d5)[3] <- "CCA1 Nagel-Kamioka"
+
+# write_csv(DTU_CCA1_nagel_kamioka_bind_d1d5, './01_tidy_data/DTU_CCA1_nagel_kamioka_bind_d1d5.csv')
+
+# TOC1 amp_gain_high ( obs) + TOC1 amp_gain_medium ( obs) + TOC1 amp_lose_high ( obs) + TOC1 amp_lose_medium ( obs) + TOC1 amp_other ( obs): total equals  obs
+DTU_TOC1_bind_d1d5 <- bind_rows(DTU_TOC1_gain_high_d1d5, DTU_TOC1_gain_medium_d1d5, DTU_TOC1_lose_high_d1d5, DTU_TOC1_lose_medium_d1d5, DTU_TOC1_other_d1d5)
+
+names(DTU_TOC1_bind_d1d5)[3] <- "TOC1"
+
+# write_csv(DTU_TOC1_bind_d1d5, './01_tidy_data/DTU_TOC1_bind_d1d5.csv')
+
+# PRR5 amp_gain_high ( obs) + PRR5 amp_gain_medium ( obs) + PRR5 amp_lose_high ( obs) + PRR5 amp_lose_medium ( obs) + PRR5 amp_other ( obs): total equals  obs
+DTU_PRR5_bind_d1d5 <- bind_rows(DTU_PRR5_gain_high_d1d5, DTU_PRR5_gain_medium_d1d5, DTU_PRR5_lose_high_d1d5, DTU_PRR5_lose_medium_d1d5, DTU_PRR5_other_d1d5)
+
+names(DTU_PRR5_bind_d1d5)[3] <- "PRR5"
+
+# write_csv(DTU_PRR5_bind_d1d5, './01_tidy_data/DTU_PRR5_bind_d1d5.csv')
+
+# PRR7 amp_gain_high ( obs) + PRR7 amp_gain_medium ( obs) + PRR7 amp_lose_high ( obs) + PRR7 amp_lose_medium ( obs) + PRR7 amp_other ( obs): total equals  obs
+DTU_PRR7_bind_d1d5 <- bind_rows(DTU_PRR7_gain_high_d1d5, DTU_PRR7_gain_medium_d1d5, DTU_PRR7_lose_high_d1d5, DTU_PRR7_lose_medium_d1d5, DTU_PRR7_other_d1d5)
+
+names(DTU_PRR7_bind_d1d5)[3] <- "PRR7"
+
+# write_csv(DTU_PRR7_bind_d1d5, './01_tidy_data/DTU_PRR7_bind_d1d5.csv')
+
+# LUX amp_gain_high ( obs) + LUX amp_gain_medium ( obs) + LUX amp_lose_high ( obs) + LUX amp_lose_medium ( obs) + LUX amp_other ( obs): total equals  obs
+DTU_LUX_bind_d1d5 <- bind_rows(DTU_LUX_gain_high_d1d5, DTU_LUX_gain_medium_d1d5, DTU_LUX_lose_high_d1d5, DTU_LUX_lose_medium_d1d5, DTU_LUX_other_d1d5)
+
+names(DTU_LUX_bind_d1d5)[3] <- "LUX"
+
+# write_csv(DTU_LUX_bind_d1d5, './01_tidy_data/DTU_LUX_bind_d1d5.csv')
+
+# ELF3 amp_gain_high ( obs) + ELF3 amp_gain_medium ( obs) + ELF3 amp_lose_high ( obs) + ELF3 amp_lose_medium ( obs) + ELF3 amp_other ( obs): total equals  obs
+DTU_ELF3_bind_d1d5 <- bind_rows(DTU_ELF3_gain_high_d1d5, DTU_ELF3_gain_medium_d1d5, DTU_ELF3_lose_high_d1d5, DTU_ELF3_lose_medium_d1d5, DTU_ELF3_other_d1d5)
+
+names(DTU_ELF3_bind_d1d5)[3] <- "ELF3"
+
+# write_csv(DTU_ELF3_bind_d1d5, './01_tidy_data/DTU_ELF3_bind_d1d5.csv')
+
+# ELF4 amp_gain_high ( obs) + ELF4 amp_gain_medium ( obs) + ELF4 amp_lose_high ( obs) + ELF4 amp_lose_medium ( obs) + ELF4 amp_other ( obs): total equals  obs
+DTU_ELF4_bind_d1d5 <- bind_rows(DTU_ELF4_gain_high_d1d5, DTU_ELF4_gain_medium_d1d5, DTU_ELF4_lose_high_d1d5, DTU_ELF4_lose_medium_d1d5, DTU_ELF4_other_d1d5)
+
+names(DTU_ELF4_bind_d1d5)[3] <- "ELF4"
+
+# write_csv(DTU_ELF4_bind_d1d5, './01_tidy_data/DTU_ELF4_bind_d1d5.csv')
+
+
+# 12 SUMMARISE TARGETS----
+
+summarise_targets <- function(df, col_str, clock_id){
+  
+  summary <- df %>% 
+    group_by({{col_str}}) %>% 
+    dplyr::summarise(n=n()) %>% 
+    mutate(freq = (n/sum(n) *100)) %>% 
+    mutate(clock = {{clock_id}})
+  
+  return(summary)
+  
+}
+
+# *12.1 DE d1-d2----
+DE_LHY_d1d2_summary <- summarise_targets(DE_LHY_bind_d1d2, type, 'LHY')
+DE_CCA1_nagel_d1d2_summary <- summarise_targets(DE_CCA1_nagel_bind_d1d2, type, 'CCA1 Nagel')
+DE_CCA1_kamioka_d1d2_summary <- summarise_targets(DE_CCA1_kamioka_bind_d1d2, type, 'CCA1 Kamioka')
+DE_CCA1_nagel_kamioka_d1d2_summary <- summarise_targets(DE_CCA1_nagel_kamioka_bind_d1d2, type, 'CCA1')
+DE_TOC1_d1d2_summary <- summarise_targets(DE_TOC1_bind_d1d2, type, 'TOC1')
+DE_PRR5_d1d2_summary <- summarise_targets(DE_PRR5_bind_d1d2, type, 'PRR5')
+DE_PRR7_d1d2_summary <- summarise_targets(DE_PRR7_bind_d1d2, type, 'PRR7')
+DE_LUX_d1d2_summary <- summarise_targets(DE_LUX_bind_d1d2, type, 'LUX')
+DE_ELF3_d1d2_summary <- summarise_targets(DE_ELF3_bind_d1d2, type, 'ELF3')
+DE_ELF4_d1d2_summary <- summarise_targets(DE_ELF4_bind_d1d2, type, 'ELF4')
+
+DE_clock_d1_d2 <- bind_rows(DE_LHY_d1d2_summary, DE_CCA1_nagel_kamioka_d1d2_summary, DE_TOC1_d1d2_summary,
+                            DE_PRR5_d1d2_summary, DE_PRR7_d1d2_summary, DE_LUX_d1d2_summary, DE_ELF3_d1d2_summary,
+                            DE_ELF4_d1d2_summary)
+
+levels(DE_clock_d1_d2$type)
+
+DE_clock_d1_d2$type <- factor(DE_clock_d1_d2$type, levels = c("gain_high_d1_d2", "gain_medium_d1_d2", "lose_medium_d1_d2", "lose_high_d1_d2"))
+
+# *12.2 DE d1-d5----
+DE_LHY_d1d5_summary <- summarise_targets(DE_LHY_bind_d1d5, type, 'LHY')
+DE_CCA1_nagel_d1d5_summary <- summarise_targets(DE_CCA1_nagel_bind_d1d5, type, 'CCA1 Nagel')
+DE_CCA1_kamioka_d1d5_summary <- summarise_targets(DE_CCA1_kamioka_bind_d1d5, type, 'CCA1 Kamioka')
+DE_CCA1_nagel_kamioka_d1d5_summary <- summarise_targets(DE_CCA1_nagel_kamioka_bind_d1d5, type, 'CCA1')
+DE_TOC1_d1d5_summary <- summarise_targets(DE_TOC1_bind_d1d5, type, 'TOC1')
+DE_PRR5_d1d5_summary <- summarise_targets(DE_PRR5_bind_d1d5, type, 'PRR5')
+DE_PRR7_d1d5_summary <- summarise_targets(DE_PRR7_bind_d1d5, type, 'PRR7')
+DE_LUX_d1d5_summary <- summarise_targets(DE_LUX_bind_d1d5, type, 'LUX')
+DE_ELF3_d1d5_summary <- summarise_targets(DE_ELF3_bind_d1d5, type, 'ELF3')
+DE_ELF4_d1d5_summary <- summarise_targets(DE_ELF4_bind_d1d5, type, 'ELF4')
+
+DE_clock_d1_d5 <- bind_rows(DE_LHY_d1d5_summary, DE_CCA1_nagel_kamioka_d1d5_summary, DE_TOC1_d1d5_summary,
+                            DE_PRR5_d1d5_summary, DE_PRR7_d1d5_summary, DE_LUX_d1d5_summary, DE_ELF3_d1d5_summary,
+                            DE_ELF4_d1d5_summary)
+
+levels(DE_clock_d1_d5$type)
+
+DE_clock_d1_d5$type <- factor(DE_clock_d1_d5$type, levels = c("other_d1_d5", "lose_medium_d1_d5", "lose_high_d1_d5"))
+
+
+# *12.3 DE Stacked Bar Plot----
+# **12.3.1 DE d1d2----
+
+plot_clock_d1d2_DE <- DE_clock_d1_d2 %>% 
+  mutate(type = factor(type, levels = c('gain_high_d1_d2', 'gain_medium_d1_d2', 'lose_medium_d1_d2', 'lose_high_d1_d2')),
+         clock = factor(clock, levels = c('CCA1', 'LHY', 'TOC1', 'PRR5', 'PRR7', 'LUX', 'ELF3', 'ELF4'))) %>% 
+  ggplot(aes(x = clock, y = freq, fill = type)) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 20, 40, 60, 80, 100)) +
+  scale_fill_manual(values = c('#31a354', '#74c476','#fb6a4a', '#de2d26'), labels = c('gain - high', 'gain - medium', 'lose - medium', 'lose - high')) +
+  geom_bar(position = 'stack', stat = 'identity') +
+  ggpubr::theme_pubr() +
+  theme(legend.position = "right", 
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 1, l = 1),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.text.x=element_text(angle=30, hjust=1, vjust=1),
+        axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold')) +
+  labs(fill = 'Amplitude', y = '%', x = '') +
+  ggtitle("DE: Day 1 vs Day 2",
+          subtitle = "transition from 20C to 4C") 
+
+plot_clock_d1d2_DE
+
+ggsave('./03_plots/plot_clock_d1d2_DE.png', dpi = 300, height = 6, width = 4, units = 'in')
+
+# **12.3.2 DE d1d5----
+
+plot_clock_d1d5_DE <- DE_clock_d1_d5 %>% 
+  mutate(type = factor(type, levels = c('other_d1_d5', 'lose_medium_d1_d5', 'lose_high_d1_d5')),
+         clock = factor(clock, levels = c('CCA1', 'LHY', 'TOC1', 'PRR5', 'PRR7', 'LUX', 'ELF3', 'ELF4'))) %>% 
+  ggplot(aes(x = clock, y = freq, fill = type)) +
+  scale_y_continuous(limits = c(0, 100.05), breaks = c(0, 20, 40, 60, 80, 100), position = "right") +
+  scale_fill_manual(values = c('#cccccc', '#fb6a4a', '#de2d26'), labels = c('other', 'lose - medium', 'lose - high')) +
+  geom_bar(position = 'stack', stat = 'identity') +
+  ggpubr::theme_pubr() +
+  theme(legend.position = "right", 
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 1, l = 1),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.text.x=element_text(angle=30, hjust=1, vjust=1),
+        axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold')) +
+  labs(fill = 'Amplitude', y = '%', x = '') +
+  ggtitle("DE: Day 1 vs Day 5",
+          subtitle = "acclimation to 4C") 
+
+plot_clock_d1d5_DE
+
+ggsave('./03_plots/plot_clock_d1d5_DE.png', dpi = 300, height = 6, width = 6, units = 'in')
+
+# *12.4 DTU d1-d2----
+DTU_LHY_d1d2_summary <- summarise_targets(DTU_LHY_bind_d1d2, type, 'LHY')
+DTU_CCA1_nagel_d1d2_summary <- summarise_targets(DTU_CCA1_nagel_bind_d1d2, type, 'CCA1 Nagel')
+DTU_CCA1_kamioka_d1d2_summary <- summarise_targets(DTU_CCA1_kamioka_bind_d1d2, type, 'CCA1 Kamioka')
+DTU_CCA1_nagel_kamioka_d1d2_summary <- summarise_targets(DTU_CCA1_nagel_kamioka_bind_d1d2, type, 'CCA1')
+DTU_TOC1_d1d2_summary <- summarise_targets(DTU_TOC1_bind_d1d2, type, 'TOC1')
+DTU_PRR5_d1d2_summary <- summarise_targets(DTU_PRR5_bind_d1d2, type, 'PRR5')
+DTU_PRR7_d1d2_summary <- summarise_targets(DTU_PRR7_bind_d1d2, type, 'PRR7')
+DTU_LUX_d1d2_summary <- summarise_targets(DTU_LUX_bind_d1d2, type, 'LUX')
+DTU_ELF3_d1d2_summary <- summarise_targets(DTU_ELF3_bind_d1d2, type, 'ELF3')
+DTU_ELF4_d1d2_summary <- summarise_targets(DTU_ELF4_bind_d1d2, type, 'ELF4')
+
+DTU_clock_d1_d2 <- bind_rows(DTU_LHY_d1d2_summary, DTU_CCA1_nagel_kamioka_d1d2_summary, DTU_TOC1_d1d2_summary,
+                             DTU_PRR5_d1d2_summary, DTU_PRR7_d1d2_summary, DTU_LUX_d1d2_summary, DTU_ELF3_d1d2_summary,
+                             DTU_ELF4_d1d2_summary)
+
+levels(DTU_clock_d1_d2$type)
+
+DTU_clock_d1_d2$type <- factor(DTU_clock_d1_d2$type, levels = c("gain_high_d1_d2", "gain_medium_d1_d2", "other_d1_d2", "lose_medium_d1_d2"))
+
+# *12.5 DTU d1-d5----
+DTU_LHY_d1d5_summary <- summarise_targets(DTU_LHY_bind_d1d5, type, 'LHY')
+DTU_CCA1_nagel_d1d5_summary <- summarise_targets(DTU_CCA1_nagel_bind_d1d5, type, 'CCA1 Nagel')
+DTU_CCA1_kamioka_d1d5_summary <- summarise_targets(DTU_CCA1_kamioka_bind_d1d5, type, 'CCA1 Kamioka')
+DTU_CCA1_nagel_kamioka_d1d5_summary <- summarise_targets(DTU_CCA1_nagel_kamioka_bind_d1d5, type, 'CCA1')
+DTU_TOC1_d1d5_summary <- summarise_targets(DTU_TOC1_bind_d1d5, type, 'TOC1')
+DTU_PRR5_d1d5_summary <- summarise_targets(DTU_PRR5_bind_d1d5, type, 'PRR5')
+DTU_PRR7_d1d5_summary <- summarise_targets(DTU_PRR7_bind_d1d5, type, 'PRR7')
+DTU_LUX_d1d5_summary <- summarise_targets(DTU_LUX_bind_d1d5, type, 'LUX')
+DTU_ELF3_d1d5_summary <- summarise_targets(DTU_ELF3_bind_d1d5, type, 'ELF3')
+DTU_ELF4_d1d5_summary <- summarise_targets(DTU_ELF4_bind_d1d5, type, 'ELF4')
+
+DTU_clock_d1_d5 <- bind_rows(DTU_LHY_d1d5_summary, DTU_CCA1_nagel_kamioka_d1d5_summary, DTU_TOC1_d1d5_summary,
+                             DTU_PRR5_d1d5_summary, DTU_PRR7_d1d5_summary, DTU_LUX_d1d5_summary, DTU_ELF3_d1d5_summary,
+                             DTU_ELF4_d1d5_summary)
+
+levels(DTU_clock_d1_d5$type)
+
+DTU_clock_d1_d5$type <- factor(DTU_clock_d1_d5$type, levels = c("gain_medium_d1_d5", "other_d1_d5", "lose_medium_d1_d5", "lose_high_d1_d5"))
+
+DTU_clock_d1_d5_dummy <- DTU_clock_d1_d5 %>% 
+  mutate(type = case_when(clock == 'ELF4' & type == 'lose_medium_d1_d5' ~ 'lose_high_d1_d5',
+                          clock == 'LHY' & type == 'gain_medium_d1_d5' ~ 'gain_high_d1_d5',
+                          TRUE ~ type))
+
+levels(DTU_clock_d1_d5_dummy$type)
+
+DTU_clock_d1_d5_dummy$type <- factor(DTU_clock_d1_d5_dummy$type, levels = c("gain_high_d1_d5", "gain_medium_d1_d5", "other_d1_d5", "lose_medium_d1_d5", "lose_high_d1_d5"))
+
+# *12.6 DTU Stacked Bar Plot----
+# **12.6.1 DTU d1d2----
+
+plot_clock_d1d2_DTU <- DTU_clock_d1_d2 %>% 
+  mutate(type = factor(type, levels = c('gain_high_d1_d2', 'gain_medium_d1_d2', 'other_d1_d2', 'lose_medium_d1_d2')),
+         clock = factor(clock, levels = c('CCA1', 'LHY', 'TOC1', 'PRR5', 'PRR7', 'LUX', 'ELF3', 'ELF4'))) %>% 
+  ggplot(aes(x = clock, y = freq, fill = type)) +
+  scale_y_continuous(limits = c(0, 100), breaks = c(0, 20, 40, 60, 80, 100)) +
+  scale_fill_manual(values = c('#31a354', '#74c476','#cccccc', '#fb6a4a'), labels = c('gain - high', 'gain - medium', 'other', 'lose - medium')) +
+  geom_bar(position = 'stack', stat = 'identity') +
+  ggpubr::theme_pubr() +
+  theme(legend.position = "right", 
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 1, l = 1),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.text.x=element_text(angle=30, hjust=1, vjust=1),
+        axis.title.y = element_text(angle = 0, vjust = 0.5, face = 'bold')) +
+  labs(fill = 'Amplitude', y = '%', x = '') +
+  ggtitle("DTU: Day 1 vs Day 2",
+          subtitle = "transition from 20C to 4C") 
+
+plot_clock_d1d2_DTU
+
+ggsave('./03_plots/plot_clock_d1d2_DTU.png', dpi = 300, height = 6, width = 4, units = 'in')
+
+# **12.6.2 DTU d1d5----
+
+plot_clock_d1d5_DTU <- DTU_clock_d1_d5 %>% 
+  mutate(type = factor(type, levels = c('gain_medium_d1_d5', 'other_d1_d5', 'lose_medium_d1_d5', 'lose_high_d1_d5')),
+         clock = factor(clock, levels = c('CCA1', 'LHY', 'TOC1', 'PRR5', 'PRR7', 'LUX', 'ELF3', 'ELF4'))) %>% 
+  ggplot(aes(x = clock, y = freq, fill = type)) +
+  scale_y_continuous(limits = c(0, 100.05), breaks = c(0, 20, 40, 60, 80, 100), position = "right") +
+  scale_fill_manual(values = c('#74c476', '#cccccc', '#fb6a4a', '#de2d26'), labels = c('gain - medium', 'other', 'lose - medium', 'lose - high')) +
+  geom_bar(position = 'stack', stat = 'identity') +
+  ggpubr::theme_pubr() +
+  theme(legend.position = "right", 
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 1, l = 1),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.text.x=element_text(angle=30, hjust=1, vjust=1),
+        axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold')) +
+  labs(fill = 'Amplitude', y = '%', x = '') +
+  ggtitle("DTU: Day 1 vs Day 5",
+          subtitle = "acclimation to 4C") 
+
+plot_clock_d1d5_DTU
+
+ggsave('./03_plots/plot_clock_d1d5_DTU.png', dpi = 300, height = 6, width = 6, units = 'in')
+
+plot_clock_d1d5_DTU_dummy <- DTU_clock_d1_d5_dummy %>% 
+  mutate(type = factor(type, levels = c('gain_high_d1_d5', 'gain_medium_d1_d5', 'other_d1_d5', 'lose_medium_d1_d5', 'lose_high_d1_d5')),
+         clock = factor(clock, levels = c('CCA1', 'LHY', 'TOC1', 'PRR5', 'PRR7', 'LUX', 'ELF3', 'ELF4'))) %>% 
+  ggplot(aes(x = clock, y = freq, fill = type)) +
+  scale_y_continuous(limits = c(0, 100.05), breaks = c(0, 20, 40, 60, 80, 100), position = "right") +
+  scale_fill_manual(values = c('#31a354', '#74c476', '#cccccc', '#fb6a4a', '#de2d26'), labels = c('gain - high', 'gain - medium', 'other', 'lose - medium', 'lose - high')) +
+  geom_bar(position = 'stack', stat = 'identity') +
+  ggpubr::theme_pubr() +
+  theme(legend.position = "bottom", 
+        legend.box.background = element_rect(color = "black"),
+        legend.box.margin = margin(t = 1, l = 1),
+        plot.title = element_text(color = "grey30", face = 'bold', hjust = 0.5),
+        plot.subtitle = element_text(color = "grey30", hjust = 0.5),
+        axis.text.x=element_text(angle=30, hjust=1, vjust=1),
+        axis.title.y.right = element_text(angle = 0, vjust = 0.5, face = 'bold')) +
+  labs(fill = 'Amplitude', y = '%', x = '') +
+  ggtitle("Day 1 vs Day 5",
+          subtitle = "acclimation to 4C") +
+  guides(colour = guide_legend(nrow = 1))
+
+plot_clock_d1d5_DTU_dummy
+
+shared_legend_clock_sum <- cowplot::get_plot_component(plot_clock_d1d5_DTU_dummy, "guide-box", return_all = TRUE)[[3]]
+
+#*12.7 panel prep----
+
+p_panel_clock_summary <- plot_grid(plot_clock_d1d2_DE + theme(legend.position="none"),
+                                   plot_clock_d1d5_DE + theme(legend.position="none"),
+                                   plot_clock_d1d2_DTU + theme(legend.position="none"),
+                                   plot_clock_d1d5_DTU + theme(legend.position="none"),
+                                   labels = 'AUTO', ncol = 2,
+                                   label_size = 16)
+
+p_panel_clock_summary_legend <- plot_grid(p_panel_clock_summary, shared_legend_clock_sum, ncol = 1, rel_heights = c(1, 0.1)) +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.margin = unit(c(5,5,5,5), 'pt'))
+
+ggsave('./03_plots/p_panel_clock_summary_legend.png', dpi = 300, height = 8, width = 8, units = 'in')
+
+# **12.7.1 amalgamated panel prep----
+
+p_panel_scat_sum_clock <- plot_grid(shared_legend_scat,
+                                    shared_legend_sum,
+                                    p_panel_scatter_DE, 
+                                    p_panel_summary_DE,
+                                    p_panel_scatter_DTU,
+                                    p_panel_summary_DTU,
+                                    
+                                    ncol = 1, 
+                                    rel_heights = c(0.1, 0.05, 0.2925, 0.2, 0.2925, 0.2, 0.05)) +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.margin = unit(c(5,5,5,5), 'pt'))
+
+ggsave('./03_plots/p_panel_scatter_summary_legend.png', dpi = 300, height = 16, width = 10, units = 'in')
+
+
