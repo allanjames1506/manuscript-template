@@ -1,6 +1,10 @@
 # Jupyter
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
+*.ipynb
+*.embed.ipynb
+*.knit.md
+
 
 # Quarto project folders
 /.quarto/
