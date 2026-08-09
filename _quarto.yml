@@ -17,6 +17,8 @@ format:
     fig-align: "center"
     comments:
       hypothesis: true
+    mermaid: 
+      theme: forest
   docx: default
   jats: default
   agu-pdf: default

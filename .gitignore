@@ -3,12 +3,18 @@
 
 /.quarto/
 /_manuscript
+/_freeze
+/_extensions
+/index_files
+/notebooks
+/images
 /00_raw_data
 /01_tidy_data
 /03_plots
 
 /agujournal2019.cls
 /trackchanges.sty
+
 .Rproj.user
 .Rhistory
 .Rdata
@@ -16,6 +22,15 @@
 .DS_Store
 .bib
 .pptx
-.png
+*.png
+.csl
 
 **/*.quarto_ipynb
+
+# Quarto render artefacts
+_freeze/
+site_libs/
+*.html
+*.json
+*.docx
+
