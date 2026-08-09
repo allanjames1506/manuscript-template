@@ -4,6 +4,7 @@
 *.ipynb
 *.embed.ipynb
 *.knit.md
+index_files/
 
 
 # Quarto project folders
