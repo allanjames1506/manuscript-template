@@ -1,6 +1,8 @@
+# Jupyter
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
+# Quarto project folders
 /.quarto/
 /_manuscript
 /_freeze
@@ -12,19 +14,28 @@
 /01_tidy_data
 /03_plots
 
+# LaTeX / journal style files
 /agujournal2019.cls
 /trackchanges.sty
 
+# RStudio
 .Rproj.user
 .Rhistory
 .Rdata
 .httr-oauth
 .DS_Store
-.bib
-.pptx
-*.png
-.csl
 
+# Bibliography and styles
+*.bib
+*.csl
+
+# Office files
+*.pptx
+
+# Figures
+*.png
+
+# Quarto notebook artefacts
 **/*.quarto_ipynb
 
 # Quarto render artefacts
@@ -33,4 +44,3 @@ site_libs/
 *.html
 *.json
 *.docx
-
