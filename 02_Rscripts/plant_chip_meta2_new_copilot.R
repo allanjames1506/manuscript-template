@@ -1,335 +1,12 @@
 
 # ============================================================
 # 1. LIBRARIES
-# ============================================================
-
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(stringr)
-library(janitor)
-library(purrr)
-library(ggh4x)
-library(MetaCycle)
-library(ggbiplot)
-library(ggrepel)
-library(circlize)
-library(UpSetR)
-library(ComplexUpset)
-library(ComplexHeatmap)
-library(igraph)
-library(ndtv)
-library(animation)
-library(ggbreak)
-library(patchwork)
-library(readxl)
-library(readr)
-library(gt)
-library(gtExtras)
-library(GOplot)
-library(org.At.tair.db)
-library(clusterProfiler)
-library(cowplot)
-library(forcats)
-library(ggthemes)
-library(ggtext)
-library(tibble)
-library(ggpubr)
-library(tidytext)
-
-# ============================================================
-# 2. HELPER FUNCTIONS
-# ============================================================
-
-# ---- 2.1 ID remapping table ----
-id_map <- tibble(
-  id = c(1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,10.5,11,11.5,12,12.5,13,13.5,14,14.5,15,15.5,16,16.5,17,
-         18,18.5,19,19.5,20,20.5,21,21.5,22,22.5,23,23.5,24,24.5,25,25.5,26),
-  new_id = c(0,1.5,3,4.5,6,7.5,9,10.5,12,13.5,15,16.5,18,19.5,21,22.5,24,25.5,27,28.5,30,31.5,33,34.5,36,37.5,39,40.5,42,
-             43.5,45,46.5,48,96,97.5,99,100.5,102,103.5,105,106.5,108,109.5,111,112.5,114,115.5,117,118.5,120)
-)
-
-# ---- 2.2 Split into days ----
-split_days <- function(df) {
-  list(
-    day1 = df %>% slice(1:17),
-    day2 = df %>% slice(17:33),
-    day5 = df %>% slice(34:50)
-  )
-}
-
-# ---- 2.3 Transpose cluster matrices ----
-transpose_clusters <- function(df, start, end, n_clusters) {
-  t(df[, -1]) %>%
-    as_tibble() %>%
-    rename_with(~ paste0("s", seq(from = start, to = end, by = 0.5))) %>%
-    mutate(clusters = paste0("cluster_", seq_len(n_clusters))) %>%
-    relocate(clusters)
-}
-
-# ---- 2.4 Clean cluster names ----
-clean_cluster_name <- function(x) {
-  str_extract(x, "\\d+")
-}
-
-
-# ---- 2.5 Read ChIP datasets ----
-read_chip <- function(path, col, skip = 0, clock) {
-  read_csv(path, skip = skip) %>%
-    select(gene_ID = {{col}}) %>%
-    mutate(gene_ID = str_sub(gene_ID, 1, 9)) %>%
-    distinct(gene_ID) %>%
-    mutate(clock = clock)
-}
-
-# ---- 2.6 Merge TF clusters with ChIP targets ----
-merge_TF_clock <- function(network, df, clock_id) {
-  inner_join(network, df, by = "gene_ID") %>%
-    arrange(nchar(cluster), cluster) %>%
-    mutate(clock = clock_id)
-}
-
-# ---- 2.7 Shared ggplot theme ----
-theme_cluster <- theme_linedraw() +
-  theme(
-    text = element_text(family = 'Helvetica'),
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 18, face = "bold"),
-    plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_blank()
-  )
-
-# ============================================================
-# 3. LOAD CLUSTER DATA (DE + DTU)
-# ============================================================
-
-load_cluster_data <- function(path) {
-  list.files(path = path, pattern = "*.csv", full.names = TRUE) %>%
-    lapply(read_csv) %>%
-    purrr::reduce(full_join, by = "id") %>%
-    remove_empty("cols") %>%
-    relocate(starts_with("cluster_"))
-}
-
-clusters_DE  <- load_cluster_data("./01_tidy_data/cluster_image_analysis_aggregate_DE")
-clusters_DTU <- load_cluster_data("./01_tidy_data/cluster_image_analysis_aggregate_DTU")
-
-DE_days  <- split_days(clusters_DE)
-DTU_days <- split_days(clusters_DTU)
-
-# Transposed matrices
-DE_day1_df  <- transpose_clusters(DE_days$day1, 1, 9, 12)
-DE_day2_df  <- transpose_clusters(DE_days$day2, 9, 17, 12)
-DE_day5_df  <- transpose_clusters(DE_days$day5, 18, 26, 12)
-
-DTU_day1_df <- transpose_clusters(DTU_days$day1, 1, 9, 10)
-DTU_day2_df <- transpose_clusters(DTU_days$day2, 9, 17, 10)
-DTU_day5_df <- transpose_clusters(DTU_days$day5, 18, 26, 10)
-
-# ============================================================
-# 4. LONG FORMAT + ID REMAPPING
-# ============================================================
-
-pivot_clusters <- function(df) {
-  df %>%
-    pivot_longer(starts_with("cluster"), names_to = "cluster", values_to = "z_score") %>%
-    left_join(id_map, by = "id") %>%
-    mutate(
-      id = new_id,
-      days = if_else(id <= 48, "Day 1 - Day 2", "Day 5"),
-      cluster = str_extract(cluster, "\\d+")
-    ) %>%
-    select(-new_id)
-}
-
-DE_long  <- pivot_clusters(clusters_DE)
-DTU_long <- pivot_clusters(clusters_DTU)
-
-# ============================================================
-# 5. PLOTTING FUNCTIONS
-# ============================================================
-plot_clusters <- function(df, annotations, title, tag) {
-  
-  cluster_levels <- sort(unique(as.numeric(df$cluster)))
-  
-  df <- df %>%
-    mutate(cluster = factor(cluster, levels = as.character(cluster_levels)))
-  
-  annotations <- annotations %>%
-    mutate(cluster = factor(cluster, levels = as.character(cluster_levels)))
-  
-  df %>%
-    ggplot(aes(x = id, y = z_score)) +
-    geom_vline(xintercept = 24, col = "lightblue", size = 2) +
-    geom_line() +
-    geom_point() +
-    theme_cluster +
-    xlim(-1, 122) +
-    scale_x_break(c(48, 96)) +
-    scale_x_continuous(breaks = seq(0, 120, 6)) +
-    annotate("rect",
-             xmin = c(0, 24, 96), xmax = c(12, 36, 108),
-             ymin = -Inf, ymax = Inf, alpha = 0.2, fill = "grey50") +
-    facet_grid(cluster ~ ., scales = "free_y") +
-    geom_text(data = annotations,
-              aes(x = x, y = y, label = label),
-              size = 6, fontface = "bold") +
-    labs(title = title, tag = tag, x = "hours", y = "z-score") +
-    theme(strip.text = element_text(face = "bold", color = "grey20", hjust = 0.5, size = 16),
-          strip.background = element_rect(fill = "lightblue", linetype = "solid",
-                                          color = "black", linewidth = 1),
-          plot.tag = element_text(size = 18, face = "bold")
-    )
-}
-
-annotations_DE <- tibble(
-  label = c("Day 1", "Day 2", "Day 5"),
-  cluster = "1",
-  x = c(12, 44, 108),
-  y = c(1.8, 1.8, 1.8)
-)
-
-annotations_DTU <- tibble(
-  label = c("Day 1", "Day 2", "Day 5"),
-  cluster = "1",
-  x = c(18, 36, 108),
-  y = c(-0.25, 1, 1)
-)
-
-plot_DE  <- plot_clusters(DE_long,  annotations_DE,  "DE gene clusters",  "A")
-plot_DTU <- plot_clusters(DTU_long, annotations_DTU, "DTU transcript clusters", "B")
-
-combined_DE_DTU <- plot_DE + plot_DTU
-
-ggsave(combined_DE_DTU, file = './03_plots/copilot/combined_DE_DTU.png', width=12, height=16, units="in",dpi=300)
-
-ggsave(plot_DE, file = './03_plots/copilot/plot_DE.png', width=6, height=16, units="in",dpi=300)
-
-ggsave(plot_DTU, file = './03_plots/copilot/plot_DTU.png', width=6, height=16, units="in",dpi=300)
-
-
-# ============================================================
-# 6. LOAD CLOCK ChIP DATASETS
-# ============================================================
-
-chip_list <- list(
-  "LHY"          = read_chip("./00_raw_data/nph15415-sup-0002-tables2.csv", 1, skip = 2, clock = "LHY"),
-  "CCA1-Nagel"   = read_chip("./00_raw_data/pnas.1513609112.sd01.csv", 10, skip = 2, clock = "CCA1-Nagel"),
-  "CCA1-Kamioka" = read_chip("./00_raw_data/TPC2015-00737-RAR3_Supplemental_Data_Set_1C.csv", 10, skip = 3, clock = "CCA1-Kamioka"),
-  "TOC1"         = read_chip("./00_raw_data/Huang TOC1 CHiP TableS1.csv", 14, clock = "TOC1"),
-  "PRR5"         = read_chip("./00_raw_data/Dataset S3 Nakamichi et al PRR5 binding targets PNAS 2012.csv", 3, skip = 2, clock = "PRR5"),
-  "PRR7"         = read_chip("./00_raw_data/Dataset S1 Liu et al PRR7 edit.csv", 17, clock = "PRR7"),
-  "LUX"          = read_chip("./00_raw_data/Ezer et al nplants Suppl Table S6.csv", 1, clock = "LUX"),
-  "ELF3"         = read_chip("./00_raw_data/ELF3_22 Ezer Table S6.csv", 1, clock = "ELF3"),
-  "ELF4"         = read_chip("./00_raw_data/ELF4_22 Ezer Table S6.csv", 1, clock = "ELF4")
-)
-
-# ============================================================
-# 7. MERGE CLOCK TARGETS WITH DE/DTU NETWORKS
-# ============================================================
-
-calixto_S7A <- read_csv("./00_raw_data/Calixto_suppl_dataset_7A_DE.csv") %>%
-  select(2:13) %>%
-  pivot_longer(starts_with("cluster"), names_to = "cluster", values_to = "gene_ID",
-               values_drop_na = TRUE) %>%
-  filter(str_detect(gene_ID, "AT")) %>%
-  mutate(cluster = str_extract(cluster, "\\d+"))
-
-calixto_S7B <- read_csv("./00_raw_data/Calixto_suppl_dataset_7B_DTU.csv") %>%
-  select(2:11) %>%
-  pivot_longer(starts_with("cluster"), names_to = "cluster", values_to = "gene_ID",
-               values_drop_na = TRUE) %>%
-  filter(str_detect(gene_ID, "AT")) %>%
-  mutate(cluster = str_extract(cluster, "\\d+"),
-         gene_ID = str_sub(gene_ID, 1, 9))
-
-DE_clock <- map2_dfr(chip_list, names(chip_list),
-                     ~ merge_TF_clock(calixto_S7A, .x, .y)) %>%
-  mutate(type = "DE")
-
-DTU_clock <- map2_dfr(chip_list, names(chip_list),
-                      ~ merge_TF_clock(calixto_S7B, .x, .y)) %>%
-  mutate(type = "DTU")
-
-glimpse(DTU_clock)
-
-DE_DTU_clock <- bind_rows(DE_clock, DTU_clock)
-
-# ============================================================
-# 8. SUMMARY TABLES (Corrected)
-# ============================================================
-
-summarise_CHIPs <- bind_rows(chip_list) %>%
-  group_by(clock) %>%
-  summarise(cis_targets = n(), .groups = "drop")
-
-summarise_merge <- DE_DTU_clock %>%
-  group_by(type, clock) %>%
-  summarise(merge_total = n(), .groups = "drop") %>%
-  left_join(summarise_CHIPs, by = "clock") %>%
-  mutate(proportion = merge_total / cis_targets) %>%
-  mutate(clock = factor(clock,
-                        levels = c("CCA1-Nagel", "CCA1-Kamioka", "LHY", "TOC1",
-                                   "PRR5", "PRR7", "LUX", "ELF3", "ELF4")))
-
-# ============================================================
-# 9. FINAL GT TABLE (Corrected)
-# ============================================================
-
-summarise_table_final <- summarise_merge %>%
-  mutate(type = factor(type, levels = c("DE", "DTU"))) %>%
-  pivot_wider(
-    id_cols    = c(clock, cis_targets),  
-    names_from = type,
-    values_from = merge_total,
-    names_glue = "{type}_clusters"
-  ) %>%
-  replace_na(list(DE_clusters = 0, DTU_clusters = 0)) %>%
-  mutate(
-    percent_DE  = 100 * DE_clusters  / cis_targets,
-    percent_DTU = 100 * DTU_clusters / cis_targets
-  ) %>%
-  replace_na(list(percent_DE = 0, percent_DTU = 0)) %>%
-  mutate(
-    transfactor = clock,
-    Epitope = case_when(
-      clock == "CCA1-Nagel"   ~ "GFP-CCA1",
-      clock == "CCA1-Kamioka" ~ "CCA1-FLAG",
-      clock == "LHY"          ~ "native LHY",
-      clock == "TOC1"         ~ "TOC1-YFP",
-      clock == "PRR5"         ~ "PRR5-FLAG",
-      clock == "PRR7"         ~ "HA-PRR7",
-      clock == "LUX"          ~ "LUX-GFP",
-      clock == "ELF3"         ~ "ELF3-MYC",
-      clock == "ELF4"         ~ "ELF4-HA",
-      TRUE ~ NA),
-    transfactor = case_when(transfactor == 'CCA1-Nagel' ~ 'CCA1 (Nagel)',
-                            transfactor == 'CCA1-Kamioka' ~ 'CCA1 (Kamioka)',
-                            TRUE ~ transfactor)) %>% 
-  select(transfactor, 
-         Epitope, 
-         cis_targets, 
-         DE_clusters, 
-         DTU_clusters, 
-         percent_DE, 
-         percent_DTU) %>% 
-  arrange(factor(transfactor, levels = c('CCA1 (Nagel)', 
-                                         'CCA1 (Kamioka)',
-                                         'LHY',
-                                         'TOC1',
-                                         'PRR5',
-                                         'PRR7',
-                                         'LUX',
-                                         'ELF3',
-                                         'ELF4')))
-
-
 summarise_table_final |>
   gt() |>
   tab_header(
     title = md("**Clock ChIP targets and their overlap with DE and DTU cluster constituents**"),
-    subtitle = " ") |>
+    subtitle = " "
+  ) |>
   tab_spanner(
     label = "Common targets",
     columns = c('DE_clusters', 'DTU_clusters')
@@ -383,24 +60,36 @@ summarise_table_final |>
     align = "center",
     columns = c('cis_targets', 'DE_clusters', 'DTU_clusters')
   ) |>
-  cols_label(transfactor = md("*trans* factor"),
-             cis_targets = md("*cis* targets"),
-             DE_clusters = "DE clusters",
-             DTU_clusters = "DTU clusters",
-             percent_DE = "% DE",
-             percent_DTU = "% DTU") %>% 
-  gt_plt_bar_pct(column = percent_DE, scaled = TRUE,
-                 labels = TRUE,
-                 fill = "#ef8a62", background = "#feb797") %>%
-  gt_plt_bar_pct(column = percent_DTU, scaled = TRUE,
-                 labels = TRUE,
-                 fill = "#999999", background = "#d6d6d6") |>
+  cols_label(
+    transfactor = md("*trans* factor"),
+    cis_targets = md("*cis* targets"),
+    DE_clusters = "DE clusters",
+    DTU_clusters = "DTU clusters",
+    percent_DE = "% DE",
+    percent_DTU = "% DTU"
+  ) |>
+  # gt_plt_bar_pct(
+  #   column = percent_DE,
+  #   scaled = TRUE,
+  #   labels = TRUE,
+  #   fill = "#ef8a62",
+  #   background = "#feb797"
+  # ) |>
+  # gt_plt_bar_pct(
+  #   column = percent_DTU,
+  #   scaled = TRUE,
+  #   labels = TRUE,
+  #   fill = "#999999",
+  #   background = "#d6d6d6"
+  # ) |>
   cols_align(
     align = "center",
-    columns = c('percent_DE', 'percent_DTU')) |>
+    columns = c('percent_DE', 'percent_DTU')
+  ) |>
   tab_spanner(
     label = "Overlap",
-    columns = c('percent_DE', 'percent_DTU'))
+    columns = c('percent_DE', 'percent_DTU')
+  )
 
 # ============================================================
 # 10. DTU SUMMARY PLOT
